@@ -1,0 +1,11 @@
+
+# Initialize configuration for loading RDF into neo4j.
+call n10s.graphconfig.init();
+call n10s.graphconfig.set( { keepLangTag: true, handleRDFTypes: "LABELS_AND_NODES" });
+
+# Ensure resources are unique.
+CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
+ASSERT r.uri IS UNIQUE;
+
+# Import d3fend.
+CALL n10s.rdf.import.fetch("https://d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");

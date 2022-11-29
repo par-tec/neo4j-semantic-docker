@@ -1,0 +1,69 @@
+#
+# Run this file using
+#
+# $ docker-compose up processor
+#
+version: "3.9"
+services:
+  pre-commit:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.pre-commit
+    working_dir: /code
+    volumes:
+    - .:/code
+  super-linter:
+    image: github/super-linter
+    environment:
+    - RUN_LOCAL=true
+    - VALIDATE_MARKDOWN=false
+    - VALIDATE_PYTHON_ISORT=false
+    - VALIDATE_XML=false
+    - VALIDATE_NATURAL_LANGUAGE=false
+    - IGNORE_GITIGNORED_FILES=true
+    volumes:
+    - .:/tmp/lint/
+    - ./tox.ini:/action/lib/.automation/.flake8
+  # This container will run successfully
+  # only if all dependencies return no errors.
+  test:
+    image: busybox
+    depends_on:
+      pre-commit:
+        condition: service_completed_successfully
+      super-linter:
+        condition: service_completed_successfully
+
+  neo4j:
+    build: .
+    restart: unless-stopped
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./.compose/neo4j/conf:/var/lib/neo4j/conf
+      - ./.compose/neo4j/data:/data
+      - ./.compose/neo4j/import:/import
+      - ./.compose/neo4j/logs:/logs
+    #   - ./.compose/neo4j/plugins:/plugins
+    environment:
+      # Raise memory limits:
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial_size=1G
+      - NEO4J_dbms_memory_heap_max_size=2G
+      # Auth:
+      - NEO4J_AUTH=none
+      # Add APOC and GDS:
+      - apoc.export.file.enabled=true
+      - apoc.import.file.enabled=true
+      - apoc.import.file.use_neo4j_config=true
+      - NEO4JLABS_PLUGINS=["graph-data-science", "apoc", "neosemantics"]
+      - NEO4J_dbms_security_procedures_allowlist=gds.*, apoc.*, n10s.*
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*, apoc.*, n10s.*
+      # Networking:
+      - NEO4J_dbms.connector.bolt.listen_address=0.0.0.0:7687
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:7474"]
+        interval: 10s
+        timeout: 10s
+        retries: 10

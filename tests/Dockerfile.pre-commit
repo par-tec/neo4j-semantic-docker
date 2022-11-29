@@ -1,0 +1,8 @@
+#
+# Self-baked pre-commit docker image.
+#
+FROM python:3
+RUN useradd noop -m
+USER noop
+RUN  pip3 --no-cache-dir install tox==3.23.0 pre-commit==2.15.0 --user
+ENTRYPOINT ["/home/noop/.local/bin/pre-commit", "run", "-a"]
