@@ -41,6 +41,7 @@ services:
       - 7474:7474
       - 7687:7687
     volumes:
+      - .:/code:z
       - ./.compose/neo4j/conf:/var/lib/neo4j/conf
       - ./.compose/neo4j/data:/data
       - ./.compose/neo4j/import:/import

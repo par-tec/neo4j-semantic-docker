@@ -1,11 +1,18 @@
+// Run in cypher-shell -u neo4j
+// Cleanup graph.
+match (n) detach delete n;
 
-# Initialize configuration for loading RDF into neo4j.
+// Initialize configuration for loading RDF into neo4j.
 call n10s.graphconfig.init();
 call n10s.graphconfig.set( { keepLangTag: true, handleRDFTypes: "LABELS_AND_NODES" });
 
-# Ensure resources are unique.
+// Ensure resources are unique.
 CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
 ASSERT r.uri IS UNIQUE;
 
-# Import d3fend.
-CALL n10s.rdf.import.fetch("https://d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");
+// Import d3fend.
+// CALL n10s.rdf.import.fetch("https://d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");
+
+// Import infrastructure.
+// CALL n10s.rdf.import.fetch("https://gist.githubusercontent.com/ioggstream/c3f1394ebf23f27aa0a9771ad1bc06f9/raw/deleteme.ttl", "Turtle");
+CALL n10s.rdf.import.fetch("file:///code/deleteme.ttl", "Turtle");

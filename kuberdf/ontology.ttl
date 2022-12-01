@@ -1,0 +1,35 @@
+@prefix k8s: <urn:k8s:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+k8s:Namespace a rdfs:Class ;
+    rdfs:label "Namespace" .
+
+k8s:connected a rdf:Property .
+k8s:hasNamespace a rdf:Property .
+k8s:hasApplication a rdf:Property;
+    rdfs:subPropertyOf k8s:connected  .
+k8s:accesses a rdf:Property ;
+    rdfs:subPropertyOf k8s:connected  .
+k8s:executes a rdf:Property ;
+    rdfs:subPropertyOf k8s:connected  .
+k8s:hasSelector a rdf:Property ;
+    rdfs:subPropertyOf k8s:connected  .
+k8s:hasImage a rdf:Property ;
+    rdfs:subPropertyOf k8s:connected  .
+
+# Kinds
+k8s:Kind a rdfs:Class .
+k8s:Application a k8s:Kind .
+k8s:BuildConfig a k8s:Kind .
+k8s:Container a k8s:Kind .
+k8s:Deployment a k8s:Kind .
+k8s:DeploymentConfig a k8s:Kind .
+k8s:Endpoints a k8s:Kind .
+k8s:Host a k8s:Kind .
+k8s:Image a k8s:Kind .
+k8s:ImageStream a k8s:Kind .
+k8s:Namespace a k8s:Kind .
+k8s:Port a k8s:Kind .
+k8s:Route a k8s:Kind .
+k8s:Service a k8s:Kind .
