@@ -6,6 +6,14 @@ match (n) detach delete n;
 call n10s.graphconfig.init();
 call n10s.graphconfig.set( { keepLangTag: true, handleRDFTypes: "LABELS_AND_NODES" });
 
+
+WITH '
+@prefix d3f:  <http://d3fend.mitre.org/ontologies/d3fend.owl#> .
+@prefix k8s: <urn:k8s:> .
+' AS txt
+CALL n10s.nsprefixes.addFromText(txt) yield prefix, namespace
+RETURN prefix, namespace;
+
 // Ensure resources are unique.
 CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
 ASSERT r.uri IS UNIQUE;
@@ -15,4 +23,21 @@ ASSERT r.uri IS UNIQUE;
 
 // Import infrastructure.
 // CALL n10s.rdf.import.fetch("https://gist.githubusercontent.com/ioggstream/c3f1394ebf23f27aa0a9771ad1bc06f9/raw/deleteme.ttl", "Turtle");
+CALL n10s.rdf.import.fetch("file:///code/d3fend.ttl", "Turtle");
 CALL n10s.rdf.import.fetch("file:///code/deleteme.ttl", "Turtle");
+
+// Add  labels
+match (n)
+where
+n.`d3f__attack-id` is not null
+set n:d3f__OffensiveTechnique ;
+
+match (n)
+where
+n.`d3f__d3fend-id` is not null
+set n:d3f__DefensiveTechnique ;
+
+// Add K8S labels
+
+match (n) -[:rdfs__subClassOf]- ({uri: "urn:k8s:Kind"})
+set n:k8s__Kind ;

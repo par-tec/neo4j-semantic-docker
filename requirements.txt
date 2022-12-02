@@ -2,3 +2,4 @@ rdflib
 pyyaml
 click
 requests
+neo4j
