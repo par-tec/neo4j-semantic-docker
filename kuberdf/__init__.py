@@ -205,7 +205,10 @@ class DC(K8Resource):
 
                     yield host_u, RDF.type, NS_K8S.Host
                     yield s_container, NS_K8S.accesses, host_u
-                except (Exception):
+                except (
+                    KeyError,
+                    AttributeError,
+                ):
                     pass
 
 

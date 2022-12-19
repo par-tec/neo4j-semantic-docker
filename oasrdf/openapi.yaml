@@ -1,0 +1,80 @@
+# Mappings between OpenAPI and DigitalArtifacts.
+openapi: 3.0.3
+info:
+  title: DigitalArtifacts
+  description: DigitalArtifacts
+  version: 1.0.0
+servers:
+  - url: https://digitalartifacts.org
+    description: DigitalArtifacts
+paths:
+  /status:
+    get:
+      summary: Get the status of the service
+      operationId: getStatus
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /oauth-endpoint:
+    get:
+      summary: Get the status of the service
+      operationId: getOauthEndpoint
+      security:
+      - oauth2:
+        - read
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+  responses:
+    Success:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
+            admin: Grants read and write access to administrative information

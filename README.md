@@ -61,6 +61,26 @@ where not p:ns0__Namespace
 return q
 ```
 
+### Complex queries
+
+To identify attack patterns in relation with a specific infrastructure,
+you can query for existing paths (p) connecting:
+
+- *instances* that are k8s Kinds (e.g. persistent volumes, images, ...)
+  which are subclasses of d3f *artifact*s
+- *attack*s that affect the above *artifact*s
+
+
+```cypher
+MATCH
+    p=(instance) -[:rdf__type]-> ( :k8s__Kind)
+           -[:rdfs__subClassOf*]->
+           (artifact)
+           <-[relation]- (attack:d3f__OffensiveTechnique)
+
+return p
+```
+
 ## pre-commit
 
 Pre-commit checks your files before committing. It can lint, format or do

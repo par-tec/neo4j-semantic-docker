@@ -1,0 +1,76 @@
+#
+# neo4j helm chart values.yaml for running on openshift.
+#
+# Install with:
+#
+# $ helm install neo4j-d3fend  neo4j/neo4j  -f values.ocp.yaml
+#
+# Once installed, you can access the neo4j browser with:
+#
+# $ oc port-forward svc/neo4j-d3fend 7474 &
+# $ xdg-open http://localhost:7474
+#
+neo4j:
+  name: d3fend
+  resources:
+    cpu: "0.5"
+    memory: "2Gi"
+
+image:
+  imagePullPolicy: IfNotPresent
+  customImage: ghcr.io/par-tec/neo4j-semantic-docker:20221219-3-2d740f6
+
+# Unset the following values, otherwise the chart will
+#  set them to 7474:7474. This will prevent openshift
+#  from setting a random user.
+securityContext:
+  runAsNonRoot: true
+  fsGroupChangePolicy: "Always"
+  runAsUser: null
+  runAsGroup: null
+  fsGroup: null
+
+config:
+  server.config.strict_validation.enabled: "false"
+#  dbms.cluster.minimum_initial_system_primaries_count: "3"
+  # The amount of memory to use for mapping the store files.
+  # The default page cache memory assumes the machine is dedicated to running
+  # Neo4j, and is heuristically set to 50% of RAM minus the Java heap size.
+  #dbms.memory.pagecache.size: "74m"
+
+  #The number of Cypher query execution plans that are cached.
+  #dbms.query_cache_size: "10"
+
+  # Java Heap Size: by default the Java heap size is dynamically calculated based
+  # on available system resources. Uncomment these lines to set specific initial
+  # and maximum heap size.
+  #dbms.memory.heap.initial_size: "317m"
+  #dbms.memory.heap.max_size: "317m"
+  dbms.tx_log.rotation.retention_policy: "100M size"
+  dbms.default_listen_address: "0.0.0.0"
+  # dbms.unmanaged_extension_classes: "n10s.endpoint=/rdf"
+  dbms.security.procedures.unrestricted: "gds.*, apoc.*, n10s.*"
+  dbms.security.procedures.allowlist: "gds.*, apoc.*, n10s.*"
+  dbms.memory.pagecache_size: "1G"
+  dbms.memory.heap.initial_size: "1G"
+  dbms.directories.plugins: /plugins
+  # dbms.directories.logs: /logs
+  # dbms.directories.import: /import
+  # dbms.security.auth_enabled: "false"
+
+
+# Volumes for Neo4j
+volumes:
+  data:
+    # REQUIRED: specify a volume mode to use for data
+    # Valid values are share|selector|defaultStorageClass|volume|volumeClaimTemplate|dynamic
+    # To get up-and-running quickly, for development or testing, use "defaultStorageClass" for a dynamically provisioned volume of the default storage class.
+    mode: defaultStorageClass
+
+    # Only used if mode is set to "defaultStorageClass"
+    # Dynamic provisioning using the default storageClass
+    defaultStorageClass:
+      accessModes:
+        - ReadWriteOnce
+      requests:
+        storage: 2Gi
