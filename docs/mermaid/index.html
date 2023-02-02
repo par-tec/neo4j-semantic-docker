@@ -1,0 +1,115 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <py-env>
+      - typing_extensions
+      - rdflib
+      - paths:
+        - ./mermaidrdf.py
+    </py-env>
+    <style type="text/css">
+      .col {
+        width: 50%;
+        border: solid 1px;
+        vertical-align: top;
+      }
+      textarea {
+        box-sizing: content-box;
+        font-family: monospace;
+        font-size: 14px;
+        border: solid 1px;
+      }
+      .result {
+        width: 100%;
+      }
+      .dataframe {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Convert a mermaid graph to RDF (experimental).</h1>
+
+    <div id="initns">
+        <p>
+            Default namespaces are:
+
+        </p>
+    </div>
+    <div>
+        <textarea id="mermaid" style="width: 100%; height: 20em;">
+graph TD
+
+Client --> WebMail[WebMail fab:fa-react fa:fa-envelope]
+WebMail --> IMAP[IMAP fa:fa-envelope fa:fa-folder]
+WebMail --> SMTP[SMTP fa:fa-envelope fa:fa-folder]
+IMAP --> Mailstore[Mailstore fa:fa-envelope fa:fa-folder]
+
+Authorization[d3f:AuthorizationService] --> |d3f:authenticates| Client
+IMAP --o Authorization
+SMTP --o Authorization
+        </textarea>
+    </div>
+    <button id="apply" style="color: white; background-color: blue; width: 100%">Query.</button>
+    <div >
+        <pre class="result" id="query-result" style="border-color: blue">
+            Results.
+        </pre>
+    </div>
+
+<py-script>
+import html
+import logging
+log = logging.getLogger()
+from pyodide import create_proxy
+import mermaidrdf
+
+
+
+def on_apply(event):
+  global mermaid
+  text = code.value
+  ret = html.escape(mermaidrdf.mermaid_to_ttl(text))
+  Element("query-result").write(ret)
+
+
+def create_f(query):
+  return lambda event: Element("mermaid").write(query)
+
+code = Element("mermaid")
+button = document.querySelector("button")
+button.addEventListener("click", create_proxy(on_apply))
+
+
+def initns_table():
+  initns_table = document.createElement("table")
+  initns = document.querySelector("#initns")
+  return
+  for ns, url in {}.items():
+    row = document.createElement("tr")
+    cell_ns = document.createElement("td")
+    cell_ns.textContent = ns
+    cell_url = document.createElement("td")
+    cell_url.textContent = url
+    row.appendChild(cell_ns)
+    row.appendChild(cell_url)
+    initns_table.appendChild(row)
+  initns.append(initns_table)
+
+
+if False:
+
+  for button_id, query in sparql.QUERIES.items():
+    log.info("button_id" + button_id)
+    b = document.querySelector(f'#{button_id}')
+    if not b:
+      log.info("button not found")
+      continue
+    # log.warning("Button %r", dir(b))
+    b.innerHTML = query["label"]
+    b.addEventListener("click", create_proxy(create_f(query["query"])))
+
+    </py-script>
+    </body>
+</html>
