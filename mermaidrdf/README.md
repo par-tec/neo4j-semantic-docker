@@ -25,6 +25,24 @@ MATCH p=
 RETURN p LIMIT 2000
 ```
 
+1- Associate each node with its rdf:type (which is a d3f:DitigalArtifact): `(n:ns0__Node)-[:rdf__type]->(artifact:d3f__DigitalArtifact)`
+2. then follow the DigitalArtifact hierarchy to the least-specific type
+`(artifact:d3f__DigitalArtifact)
+  -[:rdfs__subClassOf*0..3]->
+  (vulnerableArtifact:d3f__DigitalArtifact)`
+3. then find the attack that compromises it
+`(vulnerableArtifact:d3f__DigitalArtifact)
+  <-[compromises]-(attack:d3f__OffensiveTechnique)`
+
+```cypher
+match p=
+ (n:ns0__Node)-[:rdf__type]->(artifact:d3f__DigitalArtifact)
+  -[:rdfs__subClassOf*0..3]->
+  (vulnerableArtifact:d3f__DigitalArtifact)
+  <-[compromises]-(attack:d3f__OffensiveTechnique)
+return p
+```
+
 ## Diagram 1
 
 ```mermaid

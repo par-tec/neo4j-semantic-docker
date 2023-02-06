@@ -1,7 +1,7 @@
 import logging
 import re
 
-import rdflib
+from rdflib import Graph, Namespace
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -21,7 +21,8 @@ PAT_LINE = rf"{PAT_NODE}({PAT_ARROW}{PAT_NODE})*"
 RE_ARROW = re.compile(PAT_ARROW)
 RE_LINE = re.compile(PAT_LINE)
 RE_NODE = re.compile(PAT_NODE)
-# a python regular expression matching an unicode character or a number
+
+NS_DEFAULT = Namespace("https://par-tec.it/example#")
 
 
 def mermaid_to_rdf(mermaid):
@@ -40,16 +41,15 @@ def mermaid_to_rdf(mermaid):
 
 
 def parse_mermaid(mermaid: str):
-    g = rdflib.Graph()
-    turtle = "\n".join(mermaid_to_rdf(mermaid))
-
-    turtle = (
-        """
-    @prefix : <https://par-tec.it/example#> .
-    @prefix d3f:  <http://d3fend.mitre.org/ontologies/d3fend.owl#> .
+    g = Graph()
+    g.bind("", NS_DEFAULT)
+    g.bind("d3f", "http://d3fend.mitre.org/ontologies/d3fend.owl#")
+    g.bind("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+    turtle = """@prefix : <https://par-tec.it/example#> .
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    """
-        + turtle
+    @prefix d3f: <http://d3fend.mitre.org/ontologies/d3fend.owl#> .
+    """ + "\n".join(
+        mermaid_to_rdf(mermaid)
     )
     g.parse(data=turtle, format="turtle")
     return g.serialize(format="turtle")
@@ -131,6 +131,7 @@ def render_node(id_, label, sep):
     }
     USE_MAP = {
         ("fa-envelope",): ("d3f:Email",),
+        ("fa-user-secret",): ("d3f:UserAccount",),
     }
     if label:
         rdf += [f':{id_} rdfs:label """{label}""" .']
@@ -141,17 +142,19 @@ def render_node(id_, label, sep):
             rdf += [f":{id_} a {','.join(d3f_classes)} ."]
     for needles, d3f_classes in USE_MAP.items():
         if any((x in label.lower() for x in needles)):
+            log.info("Found %s in %s", needles, label)
             rdf += [f":{id_} d3f:accesses {','.join(d3f_classes)} ."]
 
     return id_, rdf
 
 
 def parse_line2(line):
-    # Split a mermaid line into nodes by the arrow, grouping the nodes and the arrow
-    # together in a tuple
-    # Example: A --> B --> C
-    # will be split into [(A, -->), (B, -->), (C, )]
-    # The last tuple will have an empty arrow
+    """Parse a mermaid line in the possible forms:
+    1. x[label]
+    2. x[label]-->y
+    3. x[label]-->|comment| y
+    4. x --> y --> z
+    """
     ret = RE_ARROW.split(line)
     # Pad the list with None to make sure we have a multiple of 3 length.
     ret = ret + [None] * (3 - len(ret) % 3)

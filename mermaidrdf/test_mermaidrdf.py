@@ -23,7 +23,7 @@ graph TD
     # When
     rdf = set(mermaid_to_rdf(mermaid))
     # Then
-    assert rdf == {
+    expected = {
         ":A d3f:accesses :B .",
         ":A d3f:accesses :D .",
         ":A d3f:reads :C .",
@@ -35,6 +35,7 @@ graph TD
         ":C a :Node .",
         ":D a :Node .",
     }
+    assert rdf == expected
 
 
 @pytest.mark.parametrize(
