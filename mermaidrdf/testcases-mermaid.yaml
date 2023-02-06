@@ -1,0 +1,41 @@
+---
+# Testcases.
+testcases:
+    test_mermaid_to_rdf:
+        basic:
+            mermaid: |-
+                graph TD
+                A --> B
+                A--oC
+                A[(mysql)] --> D
+                B-->C
+            expected: [
+                ":A a :Node .",
+                ":B a :Node .",
+                ":C a :Node .",
+                ":D a :Node .",
+                ":A d3f:accesses :B .",
+                ":A d3f:reads :C .",
+                ":A d3f:accesses :D .",
+                ":A a d3f:DatabaseServer .",
+                ':A rdfs:label """mysql""" .',
+                ":B d3f:accesses :C ."
+                ]
+        sqlquery:
+            mermaid: |-
+                graph TD
+                App --> |via d3f:DatabaseQuery| DB[(sql)]
+
+            expected:
+            - ":App d3f:accesses :DB ."
+            - ":App a :Node ."
+            - ":DB a :Node ."
+            - ":DB a d3f:DatabaseServer ."
+            - ':DB rdfs:label """sql""" .'
+            - ':App d3f:produces d3f:DatabaseQuery .'
+            - ':DB d3f:uses d3f:DatabaseQuery .'
+        email:
+            mermaid: |-
+                graph TD
+                Client --> |via fa:fa-envelope| MTA
+            expected: [':MTA a :Node .', ':Client a :Node .', ':Client d3f:accesses :MTA .', ':MTA d3f:uses d3f:Email .', ':Client d3f:produces d3f:Email .']

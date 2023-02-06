@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 from rdflib import Graph
 
 from . import extract_mermaid, mermaid_to_rdf, parse_line2, parse_mermaid
@@ -10,31 +11,16 @@ from . import extract_mermaid, mermaid_to_rdf, parse_line2, parse_mermaid
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+TESTCASES = yaml.safe_load(Path("testcases-mermaid.yaml").read_text())["testcases"]
 
-def test_mermaid_to_rdf():
-    # Given
-    mermaid = """
-graph TD
-    A --> B
-    A[(mysql)] --> D
-    B-->C
-    A--oC
-    """
-    # When
+
+@pytest.mark.parametrize(
+    "test_name,test_data", TESTCASES["test_mermaid_to_rdf"].items()
+)
+def test_mermaid_to_rdf(test_name, test_data):
+    mermaid = test_data["mermaid"]
+    expected = set(test_data["expected"])
     rdf = set(mermaid_to_rdf(mermaid))
-    # Then
-    expected = {
-        ":A d3f:accesses :B .",
-        ":A d3f:accesses :D .",
-        ":A d3f:reads :C .",
-        ":A a :Node .",
-        ":A a d3f:DatabaseServer .",
-        ':A rdfs:label """mysql""" .',
-        ":B d3f:accesses :C .",
-        ":B a :Node .",
-        ":C a :Node .",
-        ":D a :Node .",
-    }
     assert rdf == expected
 
 
