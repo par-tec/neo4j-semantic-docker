@@ -5,8 +5,11 @@
     <py-env>
       - typing_extensions
       - rdflib
+      - pyyaml
       - paths:
         - ./mermaidrdf.py
+        - ./kuberdf.py
+        - ./ontology.ttl
     </py-env>
     <style type="text/css">
       .col {
@@ -61,16 +64,33 @@ SMTP --o Authorization
 <py-script>
 import html
 import logging
+import yaml
 log = logging.getLogger()
 from pyodide import create_proxy
-import mermaidrdf
+import mermaidrdf, kuberdf
 
+def guess_content(text):
+  """Guess the content type of the text: mermaid or kubernetes manifest."""
+  test = text.strip()
+  if test.startswith("graph"):
+    return "mermaid"
+  if any(("kind" in x for x in yaml.safe_load_all(test))):
+    return "kubernetes"
+  return None
 
 
 def on_apply(event):
   global mermaid
   text = code.value
-  ret = html.escape(mermaidrdf.mermaid_to_ttl(text))
+  dispatch_table = {
+    "mermaid": mermaidrdf.parse_mermaid,
+    "kubernetes": kuberdf.parse_manifest
+  }
+  text_type = guess_content(text)
+  if text_type not in dispatch_table:
+    ret = (f"Unsupported content type {text_type}")
+  f = dispatch_table[text_type]
+  ret = html.escape(f(text))
   Element("query-result").write(ret)
 
 
