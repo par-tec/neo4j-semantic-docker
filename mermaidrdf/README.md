@@ -25,7 +25,7 @@ MATCH p=
 RETURN p LIMIT 2000
 ```
 
-## Diagram
+## Diagram 1
 
 ```mermaid
 graph TD
@@ -40,4 +40,12 @@ Client --> IMAP
 Authorization[d3f:AuthorizationService] --> |d3f:authenticates| Client
 IMAP --o Authorization
 SMTP --o Authorization
+```
+
+## Diagram 2
+
+```mermaid
+graph TD
+
+Client --> WAF[Web Application Firewall fa:fa-shield-alt] --> WebApp --> API[API fa:fa-server]
 ```

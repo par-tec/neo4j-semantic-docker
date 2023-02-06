@@ -12,16 +12,15 @@ MERMAID_KEYWORDS = (
     "classDef",
     "class",
 )
-RE_LABEL = r"(.*?)"
-RE_OPEN = r"|".join((r"\[\[", r"\[\(", r"\(\(", r"\{\{", r"\[\/"))
-RE_CLOSE = r"|".join((r"\]\]", r"\)\]", r"\)\)", r"\}\}", r"\/\]"))
-RE_NODE = r"(\w+)" r"(([\(\[\{\/]{1,2})" + RE_LABEL + r"([\)\]\}\/]{1,2}))?"
-# RE_NODE = r"([A-Za-z]\w+)" rf"(({RE_OPEN})" + RE_LABEL + r"([\)\]\}\/]{1,2}))?"
-RE_ARROW = r"(-[-.][o>-])"
-RE_TEXT = r"(?:\|(.+?)\|)?"  # + RE_TEXT + r"\s*"
-RE_LINE = (
-    RE_NODE + r"(?:" + r"\s*" + RE_ARROW + r"\s*" + RE_TEXT + r"\s*" + RE_NODE + ")?"
-)
+PAT_LABEL = r"(.*?)"
+PAT_OPEN = r"|".join((r"\[\[", r"\[\(", r"\(\(", r"\{\{", r"\[\/"))
+PAT_CLOSE = r"|".join((r"\]\]", r"\)\]", r"\)\)", r"\}\}", r"\/\]"))
+PAT_NODE = r"(\w+)" r"(([\(\[\{\/]{1,2})" + PAT_LABEL + r"([\)\]\}\/]{1,2}))?"
+PAT_ARROW = r"\s*(-->|--o|-[.-]+-[>ox]?)" + r"\s*" + r"(?:\|(.*)?\|)?\s*"
+PAT_LINE = rf"{PAT_NODE}({PAT_ARROW}{PAT_NODE})*"
+RE_ARROW = re.compile(PAT_ARROW)
+RE_LINE = re.compile(PAT_LINE)
+RE_NODE = re.compile(PAT_NODE)
 # a python regular expression matching an unicode character or a number
 
 
@@ -40,7 +39,7 @@ def mermaid_to_rdf(mermaid):
             yield sentence
 
 
-def mermaid_to_ttl(mermaid):
+def parse_mermaid(mermaid: str):
     g = rdflib.Graph()
     turtle = "\n".join(mermaid_to_rdf(mermaid))
 
@@ -147,6 +146,18 @@ def render_node(id_, label, sep):
     return id_, rdf
 
 
+def parse_line2(line):
+    # Split a mermaid line into nodes by the arrow, grouping the nodes and the arrow
+    # together in a tuple
+    # Example: A --> B --> C
+    # will be split into [(A, -->), (B, -->), (C, )]
+    # The last tuple will have an empty arrow
+    ret = RE_ARROW.split(line)
+    # Pad the list with None to make sure we have a multiple of 3 length.
+    ret = ret + [None] * (3 - len(ret) % 3)
+    return [tuple(ret[i : i + 3]) for i in range(0, len(ret), 3)]
+
+
 def parse_line(line):
     """Parse a mermaid line consisting of two nodes and an arrow.
     If the line is not valid, skip it."""
@@ -159,40 +170,39 @@ def parse_line(line):
         log.warning(f"Unsupported KEYWORD: {line}")
         return
     # if the line doesn't match x-->y, skip it
-    if not re.match(RE_LINE, line):
+    if not RE_LINE.match(line):
         log.warning(f"Unsupported RE_LINE: {line}")
         return
     # Split the line into the two nodes and the arrow
     # according to the mermaid syntax. The resulting line will be
     # something like 5-1-5
-    parsed_line = re.match(RE_LINE, line).groups()
+    parsed_line = parse_line2(line)
     log.info(f"Parsed line: {line} to: {parsed_line}")
-    if len(parsed_line) < 5:
-        raise NotImplementedError
-    node, other = parsed_line[:5], parsed_line[5:]
-    # Remove the trailing and leading quotes from the nodes
-    node1, node1_rdf = render_node(id_=node[0], label=node[3], sep=node[2])
-    yield from node1_rdf
 
-    if not any(other):
-        log.warning(f"No other node found in line: {line}")
-        return
-    arrow, text, *node = other
-    node2, node2_rdf = render_node(id_=node[0], label=node[3], sep=node[2])
-    yield from node2_rdf
-    # Create the RDF
-    if arrow.endswith("->"):
-        predicate = "d3f:accesses"
-    elif arrow.endswith("-o"):
-        predicate = "d3f:reads"
-    elif arrow.endswith("--"):
-        predicate = ":connected"
-    else:
-        raise NotImplementedError(f"Unsupporte predicate: {arrow}")
-    if text and text.startswith("d3f:"):
-        yield f":{node1} {text} :{node2} ."
-    else:
-        yield f":{node1} {predicate} :{node2} ."
+    node_id0, arrow0, relation0 = None, None, None
+    for node, arrow, relation in parsed_line:
+        id_, _, sep, label, _ = RE_NODE.match(node).groups()
+        # Remove the trailing and leading quotes from the nodes
+        node_id, node1_rdf = render_node(id_=id_, label=label, sep=sep)
+        yield from node1_rdf
+        if node_id0:
+            # TODO handle the relation.
+
+            if not (node and arrow0):
+                raise NotImplementedError
+            # Create the RDF
+            if arrow0.endswith("->"):
+                predicate = "d3f:accesses"
+            elif arrow0.endswith("-o"):
+                predicate = "d3f:reads"
+            elif arrow0.endswith("-"):
+                predicate = ":connected"
+            else:
+                raise NotImplementedError(f"Unsupporte predicate: {arrow}")
+            if relation0 and relation0.startswith("d3f:"):
+                predicate = relation0
+            yield f":{node_id0} {predicate} :{node_id} ."
+        node_id0, arrow0, relation0 = node_id, arrow, relation
 
 
 def extract_mermaid(text: str):
