@@ -25,7 +25,6 @@ testcases:
             mermaid: |-
                 graph TD
                 App --> |via d3f:DatabaseQuery| DB[(sql)]
-
             expected:
             - ":App d3f:accesses :DB ."
             - ":App a :Node ."
@@ -39,3 +38,24 @@ testcases:
                 graph TD
                 Client --> |via fa:fa-envelope| MTA
             expected: [':MTA a :Node .', ':Client a :Node .', ':Client d3f:accesses :MTA .', ':MTA d3f:uses d3f:Email .', ':Client d3f:produces d3f:Email .']
+        internet:
+            mermaid: |-
+                graph TD
+                Client --> |via fa:fa-globe| Internet
+            expected:
+            - ':Internet a :Node .'
+            - ':Client a :Node .'
+            - ':Client d3f:accesses :Internet .'
+            - ':Internet d3f:uses d3f:InternetNetworkTraffic .'
+            - ':Client d3f:produces d3f:InternetNetworkTraffic .'
+        authnz:
+            mermaid: |-
+                graph TD
+                OAuth --o |d3f:authenticates| Client
+            expected:
+            - ':OAuth a :Node .'
+            - ':Client a :Node .'
+            - ':OAuth a d3f:AuthorizationServer,d3f:AuthenticationService .'
+            - ':OAuth d3f:authenticates :Client .'
+            - ':OAuth d3f:produces d3f:LoginSession .'
+            - ':Client d3f:uses d3f:LoginSession .'

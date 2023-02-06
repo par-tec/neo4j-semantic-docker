@@ -75,7 +75,11 @@ SW_MAP = {
         "gitlab-ci",
         "github",
     ): ("d3f:SoftwareDeploymentTool",),
-    ("docker", "kubernetes", "fab:fa-docker"): ("d3f:ContainerOrchestrationSoftware",),
+    (
+        "docker",
+        "kubernetes",
+    ): ("d3f:ContainerOrchestrationSoftware",),
+    ("fab:fa-docker",): ("d3f:ContainerProcess",),
     ("fa-server",): ("d3f:Server",),
     ("fab:fa-python", "fab:fa-php"): ("d3f:ExecutableScript",),
     ("fa-folder",): ("d3f:FileSystem",),
@@ -89,6 +93,9 @@ SW_MAP = {
 FONTAWESOME_MAP = {
     ("fa-envelope",): ("d3f:Email",),
     ("fa-user-secret",): ("d3f:UserAccount",),
+    ("fa-globe",): ("d3f:InternetNetworkTraffic",),
+    ("fa-docker",): ("d3f:ContainerOrchestrationSoftware",),
+    ("fa-clock",): ("d3f:TaskSchedule",),
 }
 D3F_PROPERTIES = {
     "abuses",
@@ -299,7 +306,7 @@ def render_node(id_, label, sep):
 
     if sep == "[(":
         type_ = "d3f:DatabaseServer"
-    elif sep == "[[":
+    elif sep == "[[":  # FIXME: is this ok?
         type_ = "d3f:Server"
     rdf.append(f":{id_} a {type_} .")
     if label:
@@ -312,7 +319,7 @@ def render_node(id_, label, sep):
     for needles, d3f_classes in FONTAWESOME_MAP.items():
         if any((x in label.lower() for x in needles)):
             log.info("Found %s in %s", needles, label)
-            rdf += [f":{id_} d3f:accesses {','.join(d3f_classes)} ."]
+            rdf += [f":{id_} d3f:related {','.join(d3f_classes)} ."]
 
     return id_, rdf
 
@@ -384,6 +391,11 @@ def _parse_relation(src, dst, predicate, relation):
         return
     if relation.startswith("d3f:") and relation[4:] in D3F_PROPERTIES:
         yield f":{src} {relation} :{dst} ."
+
+        if relation == "d3f:authenticates":
+            yield f":{src} d3f:produces d3f:LoginSession ."
+            yield f":{dst} d3f:uses d3f:LoginSession ."
+            yield f":{src} d3f:produces d3f:AuthenticationLog ."
         return
 
     # Explicit the relationship.

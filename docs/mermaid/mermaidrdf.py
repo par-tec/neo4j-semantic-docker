@@ -23,6 +23,251 @@ RE_LINE = re.compile(PAT_LINE)
 RE_NODE = re.compile(PAT_NODE)
 
 NS_DEFAULT = Namespace("https://par-tec.it/example#")
+SW_MAP = {
+    (
+        "nginx",
+        "apache",
+        "httpd",
+    ): ("d3f:WebServer",),
+    (
+        "mysql",
+        "mariadb",
+        "postgresql",
+        "mongodb",
+    ): ("d3f:DatabaseServer",),
+    (
+        "rabbitmq",
+        "kafka",
+        "pulsar",
+    ): ("d3f:DatabaseServer", "d3f:Server"),
+    (
+        "elasticsearch",
+        "solr",
+    ): ("d3f:DatabaseServer",),
+    (
+        "postfix",
+        "smtp",
+    ): ("d3f:MailService", "d3f:MessageTransferAgent"),
+    ("dns", "bind"): ("d3f:DNSServer",),
+    ("auth0", "okta", "keycloak", "oauth"): (
+        "d3f:AuthorizationServer",
+        "d3f:AuthenticationService",
+    ),
+    ("avas", "clamav", "antispam"): (
+        "d3f:ApplicationLayerFirewall",
+        "d3f:MailService",
+    ),
+    (
+        "imap",
+        "lmtp",
+        "dovecot",
+    ): ("d3f:MailService",),
+    (
+        "gitlab",
+        "github",
+        "bitbucket",
+        "fab:fa-github",
+        "fab:fa-gitlab",
+        "fab:fa-git",
+    ): ("d3f:VersionControlSystem",),
+    (
+        "jenkins",
+        "gitlab-ci",
+        "github",
+    ): ("d3f:SoftwareDeploymentTool",),
+    (
+        "docker",
+        "kubernetes",
+    ): ("d3f:ContainerOrchestrationSoftware",),
+    ("fab:fa-docker",): ("d3f:ContainerProcess",),
+    ("fa-server",): ("d3f:Server",),
+    ("fab:fa-python", "fab:fa-php"): ("d3f:ExecutableScript",),
+    ("fa-folder",): ("d3f:FileSystem",),
+    ("fa-desktop",): ("d3f:WebServerApplication", "d3f:GraphicalUserInterface"),
+    ("fab:fa-linux", "fab:fa-ubuntu", "fab:fa-redhat"): ("d3f:OperatingSystem",),
+    ("fab:fa-angular", "fab:fa-react", "fab:fa-vuejs"): (
+        "d3f:WebServerApplication",
+        "d3f:GraphicalUserInterface",
+    ),
+}
+FONTAWESOME_MAP = {
+    ("fa-envelope",): ("d3f:Email",),
+    ("fa-user-secret",): ("d3f:UserAccount",),
+    ("fa-globe",): ("d3f:InternetNetworkTraffic",),
+    ("fa-docker",): ("d3f:ContainerOrchestrationSoftware",),
+    ("fa-clock",): ("d3f:TaskSchedule",),
+}
+D3F_PROPERTIES = {
+    "abuses",
+    "accessed-by",
+    "broader",
+    "broader-transitive",
+    "cited-by",
+    "claimed-by",
+    "contained-by",
+    "created-by",
+    "deceives",
+    "depends-on",
+    "employed-by",
+    "evaluated-by",
+    "evaluator",
+    "exactly",
+    "expected-latency",
+    "impairs",
+    "inventoried-by",
+    "invoked-by",
+    "loaded-by",
+    "mapped-by",
+    "may-be-deceived-by",
+    "may-be-detected-by",
+    "may-be-evicted-by",
+    "may-be-hardened-against-by",
+    "may-be-isolated-by",
+    "modified-by",
+    "modifies-part",
+    "narrower",
+    "narrower-transitive",
+    "process-parent",
+    "produced-by",
+    "producer",
+    "publisher",
+    "recorded-in",
+    "related",
+    "seller",
+    "submitter",
+    "used-by",
+    "validator",
+    "writes",
+    "addressed-by",
+    "attached-to",
+    "authorizes",
+    "configures",
+    "connects",
+    "creator",
+    "deceives-with",
+    "dependent",
+    "extends",
+    "has-account",
+    "has-dependent",
+    "has-feature",
+    "has-implementation",
+    "has-location",
+    "has-recipient",
+    "has-sender",
+    "hides",
+    "installs",
+    "kb-reference",
+    "license",
+    "limits",
+    "may-be-contained-by",
+    "may-be-created-by",
+    "may-be-invoked-by",
+    "may-be-modified-by",
+    "may-deceive",
+    "may-detect",
+    "may-disable",
+    "may-execute",
+    "may-harden",
+    "may-isolate",
+    "neutralizes",
+    "owns",
+    "process-ancestor",
+    "process-image-path",
+    "process-user",
+    "provider",
+    "provides",
+    "publishes",
+    "summarizes",
+    "terminates",
+    "unmounts",
+    "updates",
+    "use-limits",
+    "assessed-by",
+    "deletes",
+    "detects",
+    "drives",
+    "enabled-by",
+    "features",
+    "forges",
+    "implemented-by",
+    "implements",
+    "injects",
+    "interprets",
+    "kb-reference-of",
+    "may-be-accessed-by",
+    "may-be-tactically-associated-with",
+    "may-counter",
+    "may-interpret",
+    "may-map",
+    "may-run",
+    "obfuscates",
+    "originates-from",
+    "queries",
+    "sells",
+    "strengthens",
+    "validates",
+    "author",
+    "cites",
+    "copies",
+    "encrypts",
+    "has-evidence",
+    "manages",
+    "may-evict",
+    "may-query",
+    "process-property",
+    "records",
+    "addresses",
+    "assesses",
+    "claims",
+    "d3fend-kb-object-property",
+    "disables",
+    "evicts",
+    "has-member",
+    "isolates",
+    "latency",
+    "member-of",
+    "attack-may-be-countered-by",
+    "d3fend-tactical-verb-property",
+    "evaluates",
+    "may-counter-attack",
+    "may-transfer",
+    "verifies",
+    "counters",
+    "runs",
+    "loads",
+    "may-add",
+    "reads",
+    "blocks",
+    "filters",
+    "semantic-relation",
+    "spoofs",
+    "hardens",
+    "inventories",
+    "uses",
+    "authenticates",
+    "may-produce",
+    "adds",
+    "executes",
+    "monitors",
+    "restricts",
+    "maps",
+    "may-create",
+    "may-be-associated-with",
+    "invokes",
+    "may-access",
+    "d3fend-catalog-object-property",
+    "may-contain",
+    "may-invoke",
+    "creates",
+    "enables",
+    "contains",
+    "analyzes",
+    "accesses",
+    "may-modify",
+    "associated-with",
+    "produces",
+    "modifies",
+}
 
 
 def mermaid_to_rdf(mermaid):
@@ -57,82 +302,13 @@ def parse_mermaid(mermaid: str):
 
 def render_node(id_, label, sep):
     type_ = ":Node"
+    rdf = [f":{id_} a {type_} ."]
 
     if sep == "[(":
         type_ = "d3f:DatabaseServer"
-    elif sep == "[[":
+    elif sep == "[[":  # FIXME: is this ok?
         type_ = "d3f:Server"
-    rdf = [f":{id_} a {type_} ."]
-
-    SW_MAP = {
-        (
-            "nginx",
-            "apache",
-            "httpd",
-        ): ("d3f:WebServer",),
-        (
-            "mysql",
-            "mariadb",
-            "postgresql",
-            "mongodb",
-        ): ("d3f:DatabaseServer",),
-        (
-            "rabbitmq",
-            "kafka",
-            "pulsar",
-        ): ("d3f:DatabaseServer", "d3f:Server"),
-        (
-            "elasticsearch",
-            "solr",
-        ): ("d3f:DatabaseServer",),
-        (
-            "postfix",
-            "smtp",
-        ): ("d3f:MailService", "d3f:MessageTransferAgent"),
-        ("dns", "bind"): ("d3f:DNSServer",),
-        ("auth0", "okta", "keycloak", "oauth"): (
-            "d3f:AuthorizationServer",
-            "d3f:AuthenticationService",
-        ),
-        ("avas", "clamav", "antispam"): (
-            "d3f:ApplicationLayerFirewall",
-            "d3f:MailService",
-        ),
-        (
-            "imap",
-            "lmtp",
-            "dovecot",
-        ): ("d3f:MailService",),
-        (
-            "gitlab",
-            "github",
-            "bitbucket",
-            "fab:fa-github",
-            "fab:fa-gitlab",
-            "fab:fa-git",
-        ): ("d3f:VersionControlSystem",),
-        (
-            "jenkins",
-            "gitlab-ci",
-            "github",
-        ): ("d3f:SoftwareDeploymentTool",),
-        ("docker", "kubernetes", "fab:fa-docker"): (
-            "d3f:ContainerOrchestrationSoftware",
-        ),
-        ("fa-server",): ("d3f:Server",),
-        ("fab:fa-python", "fab:fa-php"): ("d3f:ExecutableScript",),
-        ("fa-folder",): ("d3f:FileSystem",),
-        ("fa-desktop",): ("d3f:WebServerApplication", "d3f:GraphicalUserInterface"),
-        ("fab:fa-linux", "fab:fa-ubuntu", "fab:fa-redhat"): ("d3f:OperatingSystem",),
-        ("fab:fa-angular", "fab:fa-react", "fab:fa-vuejs"): (
-            "d3f:WebServerApplication",
-            "d3f:GraphicalUserInterface",
-        ),
-    }
-    USE_MAP = {
-        ("fa-envelope",): ("d3f:Email",),
-        ("fa-user-secret",): ("d3f:UserAccount",),
-    }
+    rdf.append(f":{id_} a {type_} .")
     if label:
         rdf += [f':{id_} rdfs:label """{label}""" .']
 
@@ -140,10 +316,10 @@ def render_node(id_, label, sep):
     for softwares, d3f_classes in SW_MAP.items():
         if any((x in label.lower() for x in softwares)):
             rdf += [f":{id_} a {','.join(d3f_classes)} ."]
-    for needles, d3f_classes in USE_MAP.items():
+    for needles, d3f_classes in FONTAWESOME_MAP.items():
         if any((x in label.lower() for x in needles)):
             log.info("Found %s in %s", needles, label)
-            rdf += [f":{id_} d3f:accesses {','.join(d3f_classes)} ."]
+            rdf += [f":{id_} d3f:related {','.join(d3f_classes)} ."]
 
     return id_, rdf
 
@@ -202,10 +378,47 @@ def parse_line(line):
                 predicate = ":connected"
             else:
                 raise NotImplementedError(f"Unsupporte predicate: {arrow}")
-            if relation0 and relation0.startswith("d3f:"):
-                predicate = relation0
-            yield f":{node_id0} {predicate} :{node_id} ."
+
+            yield from _parse_relation(node_id0, node_id, predicate, relation0)
+
         node_id0, arrow0, relation0 = node_id, arrow, relation
+
+
+def _parse_relation(src, dst, predicate, relation):
+    """Parse a relation between two nodes."""
+    if not relation:
+        yield f":{src} {predicate} :{dst} ."
+        return
+    if relation.startswith("d3f:") and relation[4:] in D3F_PROPERTIES:
+        yield f":{src} {relation} :{dst} ."
+
+        if relation == "d3f:authenticates":
+            yield f":{src} d3f:produces d3f:LoginSession ."
+            yield f":{dst} d3f:uses d3f:LoginSession ."
+            yield f":{src} d3f:produces d3f:AuthenticationLog ."
+        return
+
+    # Explicit the relationship.
+    yield f":{src} {predicate} :{dst} ."
+
+    # Introduces a relation based on a specific d3f:DigitalArtifact,
+    # e.g. :App --> |via d3f:DatabaseQuery| :Database
+    for needle in re.findall(r"(d3f:[A-Za-z0-9._\.-]+)", relation):
+        # TODO verify that the relation is a valid d3f:DigitalArtifact.
+        yield f":{src} d3f:produces {needle} ."
+        yield f":{dst} d3f:uses {needle} ."
+        return
+
+    # Introduces a relation based on a specific d3f:DigitalArtifact,
+    # e.g. :Client --> |via fa:fa-envelope| :MTA
+    for rel in re.findall(r"(?:fab?:(fa-[a-z0-9-]+))", relation):
+        for needles, d3f_classes in FONTAWESOME_MAP.items():
+            if rel not in needles:
+                continue
+            for d3f_class in d3f_classes:
+                yield f":{src} d3f:produces {d3f_class} ."
+                yield f":{dst} d3f:uses {d3f_class} ."
+        return
 
 
 def extract_mermaid(text: str):
