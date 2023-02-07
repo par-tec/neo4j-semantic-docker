@@ -1,23 +1,36 @@
 <html>
   <head>
-    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <py-config type="toml">
+    packages = [
+      "typing_extensions",
+      "pyyaml",
+      "rdflib",
+      "pandas"
+    ]
+    [[fetch]]
+    files = [
+      "./mermaidrdf.py",
+      "./kuberdf.py",
+      "./app.py",
+      "./ontology.ttl",
+      "./d3fend-short.ttl"]
+    </py-config>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.3.2/dist/css/bootstrap-italia.min.css" rel="stylesheet">
-<!--
+
+    <!-- Load mermaid library -->
+    <script>
+        /// Load mermaid library as a js global variable accessible by pyscript.
+        (async() => {
+          mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs');
+        })();
+    </script>
+
+    <!-- Styles & co -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.3.2/dist/css/bootstrap-italia.min.css" rel="stylesheet">
+    <link href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.3.2/dist/js/bootstrap-italia.bundle.min.js"></script>
--->
-    <py-env>
-      - typing_extensions
-      - rdflib
-      - pyyaml
-      - paths:
-        - ./mermaidrdf.py
-        - ./kuberdf.py
-        - ./app.py
-        - ./ontology.ttl
-        - ./d3fend-short.ttl
-    </py-env>
     <style type="text/css">
       .col {
         width: 50%;
@@ -37,17 +50,19 @@
         width: 100%;
       }
     </style>
-        <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
-      mermaid.initialize({ startOnLoad: true });
-    </script>
+
   </head>
   <body>
     <h1>Convert a mermaid graph to RDF (experimental).</h1>
 
-    <div>
-        <textarea id="mermaid" style="width: 100%; height: 20em;">
-graph TD
+
+    <div class="row" style="height: 100%">
+
+
+
+      <div class="col-sm">
+          <textarea id="mermaid" style="width: 100%; height: 100%;">
+graph LR
 
 %% The simple arrow maps to d3f:accesses
 Client --> WebMail
@@ -67,55 +82,66 @@ IMAP --> Mailstore[Mailstore fa:fa-envelope fa:fa-folder]
 Authorization[d3f:AuthorizationService fa:fa-user-secret] --> |d3f:authenticates| Client
 IMAP --o Authorization
 SMTP --o Authorization
-        </textarea>
-    </div>
-    <div id="mermaid-graph">
-      <div class="mermaid">
-      graph TD
+          </textarea>
+      </div>
+<div class="col-sm">
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Tab 1</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">Tab 2</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">Tab 3</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Tab 4</a></li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
 
-      %% The simple arrow maps to d3f:accesses
-      Client --> WebMail
- 
+    <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+      <pre class="result" id="query-result" style="border-color: blue"> Results. </pre>
+    </div>
 
-      </div>
+    <div class="tab-pane p-4 fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+      <p id="mermaid-graph">
+        graph TD
+
+        %% The simple arrow maps to d3f:accesses
+        Client --> WebMail
+      </p>
     </div>
-    <button id="apply" style="color: white; background-color: blue; width: 100%">Query.</button>
-    <div class="row" >
-      <div class="col-sm">
-          <pre class="result" id="query-result" style="border-color: blue">
-              Results.
-          </pre>
-      </div>
-      <div class="col-sm" id="summary">
-        summary placeholder
-      </div>
+
+    <div class="tab-pane p-4 fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
+      <div id="summary"> summary placeholder </div>
     </div>
+
+    <div class="tab-pane p-4 fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
+        <h3>Inspect the semantic graph `g`.</h3>
+        <py-repl output="replOutput">
+            list(g.namespaces())
+        </py-repl>
+        <div id="replOutput"></div>
+    </div>
+
+  </div><!-- tab-content -->
+
+</div><!-- row -->
+
 
 <py-script>
-import html
-import logging
-import yaml
-from rdflib import Graph
-import js
-log = logging.getLogger()
-
+import pyodide_js
 from pyodide import create_proxy
+import js
+import logging
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.ERROR)
+log.info(f"{pyodide_js.version= }")
+import html
+import rdflib
+import pandas as pd
+
 import mermaidrdf, kuberdf, app
+from js import mermaid
+log.info(f"mermaid: {dir(mermaid)}")
+mermaidAPI = mermaid.default.mermaidAPI
 
-g = Graph()
-log.info("Loading ontologies...")
-# g.parse("ontology.ttl", format="turtle")
-# g.parse("d3fend-short.ttl", format="turtle")
-log.info("Loaded ontology")
 
-def guess_content(text):
-  """Guess the content type of the text: mermaid or kubernetes manifest."""
-  test = text.strip()
-  if test.startswith("graph"):
-    return "mermaid"
-  if any(("kind" in x for x in yaml.safe_load_all(test))):
-    return "kubernetes"
-  return None
+g = app.initialize_graph(["ontology.ttl","d3fend-short.ttl"])
 
 
 def on_apply(event):
@@ -125,53 +151,40 @@ def on_apply(event):
     "mermaid": mermaidrdf.parse_mermaid,
     "kubernetes": kuberdf.parse_manifest
   }
-  text_type = guess_content(text)
+  text_type = app.guess_content(text)
   if text_type not in dispatch_table:
     ret = (f"Unsupported content type {text_type}")
-  f = dispatch_table[text_type]
-  turtle = f(text)
-  g.parse(data=turtle, format="turtle")
-  Element("query-result").write(html.escape(turtle))
+  else:
+    f = dispatch_table[text_type]
+    ret = f(text)
+  Element("query-result").write(ret)
+
   log.warning("Creating summary..")
-  Element("summary").write(app.d3fend_summary(g))
+  g.parse(data=ret, format="turtle")
+  rows = app.d3fend_summary(g)
+  df = pd.DataFrame(data=rows[1:], columns=rows[0])
+  Element("summary").write(df)
 
-# Create an element with pyscript
 
-
-def copy_text(event):
+def render_mmd(event):
+  """Render the `mermaid-graph` with `mermaid`.text"""
   log.warning(f"event {event}")
   text = Element("mermaid").value
-  mermaid_graph = js.document.createElement("div")
-  mermaid_graph.classList.add("mermaid")
-  mermaid_graph.innerHTML = text
-  document.getElementById("mermaid-graph").appendChild(mermaid_graph)
+  mmd = mermaidAPI.render('buz', text)
+  js.document.getElementById("mermaid-graph").innerHTML = mmd
 
-
-def create_f(query):
-  return lambda event: Element("mermaid").write(query)
 
 code = Element("mermaid")
-button = document.querySelector("button")
-button.addEventListener("click", create_proxy(on_apply))
-document.getElementById("mermaid").addEventListener("change", create_proxy(copy_text))
+tab = js.document.querySelector("li")
+log.info("Found elements %r" % tab)
+tab.addEventListener("click", create_proxy(on_apply))
+js.document.getElementById("mermaid").addEventListener("change", create_proxy(render_mmd))
 
-
-
-
-if False:
-
-  for button_id, query in sparql.QUERIES.items():
-    log.info("button_id" + button_id)
-    b = document.querySelector(f'#{button_id}')
-    if not b:
-      log.info("button not found")
-      continue
-    # log.warning("Button %r", dir(b))
-    b.innerHTML = query["label"]
-    b.addEventListener("click", create_proxy(create_f(query["query"])))
-
+initialized = False
+if not initialized:
+  render_mmd(None)
+  initialized = True
     </py-script>
-
 
     </body>
 </html>

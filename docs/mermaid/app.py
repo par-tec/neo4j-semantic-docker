@@ -1,8 +1,14 @@
 import logging
 from pathlib import Path
+from time import time
 
+import pandas as pd
+import yaml
 from rdflib import Graph
 from rdflib.term import Literal, URIRef
+
+import kuberdf
+import mermaidrdf
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +60,38 @@ turtle_text = """
 """
 
 
+def initialize_graph(ontologies):
+    ts = time()
+    log.info("Loading ontologies..")
+    g = Graph()
+    for ontology in ontologies:
+        g.parse(ontology, format="turtle")
+    log.info(f"Ontologies loaded in {time()-ts}s")
+    return g
+
+
+def content_to_rdf(text):
+    dispatch_table = {
+        "mermaid": mermaidrdf.parse_mermaid,
+        "kubernetes": kuberdf.parse_manifest,
+    }
+    text_type = guess_content(text)
+    if text_type not in dispatch_table:
+        return f"Unsupported content type {text_type}"
+    f = dispatch_table[text_type]
+    return f(text)
+
+
+def guess_content(text):
+    """Guess the content type of the text: mermaid or kubernetes manifest."""
+    test = text.strip()
+    if test.startswith("graph"):
+        return "mermaid"
+    if any(("kind" in x for x in yaml.safe_load_all(test))):
+        return "kubernetes"
+    return None
+
+
 def test_as_graph():
     g = Graph()
     g.parse(data=turtle_text, format="turtle")
@@ -67,6 +105,10 @@ def d3fend_summary(g: Graph):
     ret = list(
         g.query(
             """
+        prefix : <https://par-tec.it/example#>
+        prefix d3f: <http://d3fend.mitre.org/ontologies/d3fend.owl#>
+        prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
         SELECT DISTINCT
             ?node ?relation ?artifact ?attack_id ?attack_label
         WHERE {
@@ -81,7 +123,20 @@ def d3fend_summary(g: Graph):
     )
 
     headers = ["node", "relation", "artifact", "attack"]
-    html = list_as_html_table(headers + ret)
+    return [headers] + [render_row(row) for row in ret]
+
+
+def test_d3fend_summary_pd():
+    g = initialize_graph(["../d3fend.ttl"])
+    g.parse(data=turtle_text, format="turtle")
+    rows = d3fend_summary(g)
+    df = pd.DataFrame(rows[1:], columns=rows[0])
+    raise NotImplementedError
+
+
+def d3fend_summary_html(g: Graph):
+    summary = d3fend_summary(g)
+    html = list_as_html_table(summary)
     return html
 
 
