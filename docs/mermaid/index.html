@@ -2,6 +2,11 @@
   <head>
     <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
     <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.3.2/dist/css/bootstrap-italia.min.css" rel="stylesheet">
+<!--
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.3.2/dist/js/bootstrap-italia.bundle.min.js"></script>
+-->
     <py-env>
       - typing_extensions
       - rdflib
@@ -9,7 +14,9 @@
       - paths:
         - ./mermaidrdf.py
         - ./kuberdf.py
+        - ./app.py
         - ./ontology.ttl
+        - ./d3fend-short.ttl
     </py-env>
     <style type="text/css">
       .col {
@@ -30,16 +37,14 @@
         width: 100%;
       }
     </style>
+        <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
   </head>
   <body>
     <h1>Convert a mermaid graph to RDF (experimental).</h1>
 
-    <div id="initns">
-        <p>
-            Default namespaces are:
-
-        </p>
-    </div>
     <div>
         <textarea id="mermaid" style="width: 100%; height: 20em;">
 graph TD
@@ -64,20 +69,44 @@ IMAP --o Authorization
 SMTP --o Authorization
         </textarea>
     </div>
+    <div id="mermaid-graph">
+      <div class="mermaid">
+      graph TD
+
+      %% The simple arrow maps to d3f:accesses
+      Client --> WebMail
+ 
+
+      </div>
+    </div>
     <button id="apply" style="color: white; background-color: blue; width: 100%">Query.</button>
-    <div >
-        <pre class="result" id="query-result" style="border-color: blue">
-            Results.
-        </pre>
+    <div class="row" >
+      <div class="col-sm">
+          <pre class="result" id="query-result" style="border-color: blue">
+              Results.
+          </pre>
+      </div>
+      <div class="col-sm" id="summary">
+        summary placeholder
+      </div>
     </div>
 
 <py-script>
 import html
 import logging
 import yaml
+from rdflib import Graph
+import js
 log = logging.getLogger()
+
 from pyodide import create_proxy
-import mermaidrdf, kuberdf
+import mermaidrdf, kuberdf, app
+
+g = Graph()
+log.info("Loading ontologies...")
+# g.parse("ontology.ttl", format="turtle")
+# g.parse("d3fend-short.ttl", format="turtle")
+log.info("Loaded ontology")
 
 def guess_content(text):
   """Guess the content type of the text: mermaid or kubernetes manifest."""
@@ -90,7 +119,7 @@ def guess_content(text):
 
 
 def on_apply(event):
-  global mermaid
+  global mermaid, g
   text = code.value
   dispatch_table = {
     "mermaid": mermaidrdf.parse_mermaid,
@@ -100,8 +129,22 @@ def on_apply(event):
   if text_type not in dispatch_table:
     ret = (f"Unsupported content type {text_type}")
   f = dispatch_table[text_type]
-  ret = html.escape(f(text))
-  Element("query-result").write(ret)
+  turtle = f(text)
+  g.parse(data=turtle, format="turtle")
+  Element("query-result").write(html.escape(turtle))
+  log.warning("Creating summary..")
+  Element("summary").write(app.d3fend_summary(g))
+
+# Create an element with pyscript
+
+
+def copy_text(event):
+  log.warning(f"event {event}")
+  text = Element("mermaid").value
+  mermaid_graph = js.document.createElement("div")
+  mermaid_graph.classList.add("mermaid")
+  mermaid_graph.innerHTML = text
+  document.getElementById("mermaid-graph").appendChild(mermaid_graph)
 
 
 def create_f(query):
@@ -110,22 +153,9 @@ def create_f(query):
 code = Element("mermaid")
 button = document.querySelector("button")
 button.addEventListener("click", create_proxy(on_apply))
+document.getElementById("mermaid").addEventListener("change", create_proxy(copy_text))
 
 
-def initns_table():
-  initns_table = document.createElement("table")
-  initns = document.querySelector("#initns")
-  return
-  for ns, url in {}.items():
-    row = document.createElement("tr")
-    cell_ns = document.createElement("td")
-    cell_ns.textContent = ns
-    cell_url = document.createElement("td")
-    cell_url.textContent = url
-    row.appendChild(cell_ns)
-    row.appendChild(cell_url)
-    initns_table.appendChild(row)
-  initns.append(initns_table)
 
 
 if False:
@@ -141,5 +171,7 @@ if False:
     b.addEventListener("click", create_proxy(create_f(query["query"])))
 
     </py-script>
+
+
     </body>
 </html>
