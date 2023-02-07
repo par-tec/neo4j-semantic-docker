@@ -54,7 +54,8 @@
   </head>
   <body>
     <h1>Convert a mermaid graph to RDF (experimental).</h1>
-
+    <p>Enter a mermaid graph in the left textarea, and click on the left tabs to see the D3FEND Summary and the RDF graph that can
+    be imported on a SPARQL/Neo4j servers for further analysis</p>
 
     <div class="row" style="height: 100%">
 
@@ -74,8 +75,8 @@ WebMail[WebMail fab:fa-react fa:fa-envelope]
 %% Font-Awesome icons can indicate that a node
 %%   accesses specific resources
 %%   (e.g. fa-envelope represent a d3f:Email)
-WebMail --> IMAP[IMAP fa:fa-envelope fa:fa-folder]
-WebMail --> SMTP[SMTP fa:fa-envelope fa:fa-folder]
+WebMail -->|fa:fa-envelope| IMAP[IMAP fa:fa-envelope fa:fa-folder]
+WebMail -->|fa:fa-envelope| SMTP[SMTP fa:fa-envelope fa:fa-folder]
 IMAP --> Mailstore[Mailstore fa:fa-envelope fa:fa-folder]
 
 %% Associated d3f:DigitalArtifacts can be referenced via URIs too.
@@ -86,16 +87,14 @@ SMTP --o Authorization
       </div>
 <div class="col-sm">
   <ul class="nav nav-tabs" id="myTab" role="tablist">
-    <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Tab 1</a></li>
-    <li class="nav-item"><a class="nav-link" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">Tab 2</a></li>
-    <li class="nav-item"><a class="nav-link" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">Tab 3</a></li>
-    <li class="nav-item"><a class="nav-link" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Tab 4</a></li>
+    <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Mermaid</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">D3FEND</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">RDF graph</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Console</a></li>
+    <li class="nav-item"><a class="nav-link" id="tab5-tab" data-bs-toggle="tab" href="#tab5" role="tab" aria-controls="tab5" aria-selected="false">Help</a></li>
   </ul>
   <div class="tab-content" id="myTabContent">
 
-    <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
-      <pre class="result" id="query-result" style="border-color: blue"> Results. </pre>
-    </div>
 
     <div class="tab-pane p-4 fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
       <p id="mermaid-graph">
@@ -110,24 +109,48 @@ SMTP --o Authorization
       <div id="summary"> summary placeholder </div>
     </div>
 
+    <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+      <pre class="result" id="graph-turtle" style="border-color: blue"> Results. </pre>
+    </div>
+
     <div class="tab-pane p-4 fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
-        <h3>Inspect the semantic graph `g`.</h3>
+        <p>Inspect the semantic graphs `g` and `g1`.</p>
         <py-repl output="replOutput">
             list(g.namespaces())
         </py-repl>
         <div id="replOutput"></div>
     </div>
 
+    <div class="tab-pane p-4 fade" id="tab5" role="tabpanel" aria-labelledby="tab5-tab">
+        <p>This tools shows a possible usage of the D3FEND ontology to support the design and review of IT architectures.
+
+        **Note that mermaid graph is not rendered automatically. You need to click on the Mermaid tab to refresh it.**
+
+        <ul>
+        <li>The first step is to represent your components and their relationships in a mermaid graph.
+        <li>You can classify your components using font-awesome icons (see the <a href="https://fontawesome.com/icons?d=gallery">gallery</a>). For example the <code>fa:fa-envelope</code> icon is used to reference is an email.
+
+        <pre>Client -->|fa:fa-envelope| MTA</pre>
+
+        The application is capable to label major sofware applications (e.g. nginx, postfix, ...) and to map them to the corresponding D3FEND classes (e.g. <code>d3f:MailTransferAgent</code>).
+
+        You can also use the <code>fab:fa-react</code> icon to indicate that a component is a WebUI.
+
+        <li>Once you have created your mermaid graph, you can click on the D3FEND tab to see the corresponding D3FEND graph. The D3FEND graph is represented as a turtle file. You can copy and paste it in your favorite RDF editor (e.g. <a href="https://www.w3.org/RDF/Validator/">W3C RDF validator</a>).
+
+        <li>The "Summary" tab shows a table with the main entities of the D3FEND graph and the attacks associated with the specific DigitalArtifacts. The table contains hyperlinks to the corresponding D3FEND classes and ATT&CK techniques.
+        </p>
+    </div>
+
   </div><!-- tab-content -->
 
 </div><!-- row -->
-
-
 <py-script>
 import pyodide_js
 from pyodide import create_proxy
 import js
 import logging
+from time import time
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.ERROR)
 log.info(f"{pyodide_js.version= }")
@@ -135,35 +158,43 @@ import html
 import rdflib
 import pandas as pd
 
-import mermaidrdf, kuberdf, app
+import app
 from js import mermaid
 log.info(f"mermaid: {dir(mermaid)}")
 mermaidAPI = mermaid.default.mermaidAPI
 
 
 g = app.initialize_graph(["ontology.ttl","d3fend-short.ttl"])
-
+g1 = None
+text0 = None
 
 def on_apply(event):
-  global mermaid, g
-  text = code.value
-  dispatch_table = {
-    "mermaid": mermaidrdf.parse_mermaid,
-    "kubernetes": kuberdf.parse_manifest
-  }
-  text_type = app.guess_content(text)
-  if text_type not in dispatch_table:
-    ret = (f"Unsupported content type {text_type}")
-  else:
-    f = dispatch_table[text_type]
-    ret = f(text)
-  Element("query-result").write(ret)
+  """Create the RDF graph from mermaid text,
+    update the turtle representation
+    and the summary table.
+  """
+  global g, g1, text0
+  if text0 == Element("mermaid").value:
+    log.warning("No change in mermaid text.")
+    return
+  text0 = Element("mermaid").value
+
+  log.warning("Creating RDF graph..")
+  t0 = time()
+  graph_ttl = app.content_to_rdf(Element("mermaid").value)
+  Element("graph-turtle").write(graph_ttl)
+  log.warning("Created RDF graph in %d.." % (time()-t0,))
 
   log.warning("Creating summary..")
-  g.parse(data=ret, format="turtle")
-  rows = app.d3fend_summary(g)
-  df = pd.DataFrame(data=rows[1:], columns=rows[0])
-  Element("summary").write(df)
+  t0 = time()
+  g1 = rdflib.Graph()
+  g1.parse(data=graph_ttl, format="turtle")
+  html = app.d3fend_summary_html(g + g1)
+  log.warning("Created summary in %d.." % (time()-t0,))
+
+  summary = Element("summary")
+  summary.clear()
+  summary.element.innerHTML = html
 
 
 def render_mmd(event):
@@ -175,9 +206,9 @@ def render_mmd(event):
 
 
 code = Element("mermaid")
-tab = js.document.querySelector("li")
+tab = js.document.querySelectorAll("li.nav-item")
 log.info("Found elements %r" % tab)
-tab.addEventListener("click", create_proxy(on_apply))
+[x.addEventListener("click", create_proxy(on_apply)) for x in tab]
 js.document.getElementById("mermaid").addEventListener("change", create_proxy(render_mmd))
 
 initialized = False
