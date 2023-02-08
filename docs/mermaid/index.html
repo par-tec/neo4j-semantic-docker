@@ -98,7 +98,7 @@ SMTP --o Authorization
     </div>
 
     <div class="tab-pane p-4 fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-      <h4>D3FEND Summary with artifacts and attacks. <button class="btn fas fa-copy" id="summary-copy"></button> </h4>
+      <h4>D3FEND Summary with artifacts and attacks. <button class="fas fa-copy" id="summary-copy"></button> </h4>
       <div id="summary">summary placeholder </div>
     </div>
 
@@ -227,17 +227,6 @@ def render_mmd(event):
   js.document.getElementById("mermaid-graph").innerHTML = mmd
 
 
-code = Element("mermaid")
-tabs = js.document.querySelectorAll("li.nav-item")
-log.info("Found elements %r" % tabs)
-for tab in tabs:
-  log.info(f"Found element {tab}")
-  if not tab:
-    continue
-  tab.addEventListener("click", create_proxy(on_apply))
-  tab.addEventListener("click", create_proxy(on_apply))
-js.document.getElementById("mermaid").addEventListener("input", create_proxy(render_mmd))
-
 def _copy_to_clipboard_with_js(id_):
   """Copy text to clipboard using javascript.
 
@@ -252,13 +241,22 @@ def _copy_to_clipboard_with_js(id_):
   ci = js.ClipboardItem.new(**{"text/html": blob})
   js.navigator.clipboard.write([ci])
 
-summary_copy = js.document.getElementById("summary-copy")
-summary_copy.addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("summary")))
-
 
 initialized = False
 if not initialized:
   render_mmd(None)
+
+  # Register events.
+  tabs = js.document.querySelectorAll("li.nav-item")
+  log.info("Found elements %r" % tabs)
+  for tab in tabs:
+    log.info(f"Found element {tab}")
+    if not tab:
+      continue
+    tab.addEventListener("click", create_proxy(on_apply))
+  js.document.getElementById("mermaid").addEventListener("input", create_proxy(render_mmd))
+  js.document.getElementById("summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("summary")))
+
   initialized = True
     </py-script>
 
