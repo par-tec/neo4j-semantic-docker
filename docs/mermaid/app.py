@@ -9,6 +9,7 @@ import kuberdf
 import mermaidrdf
 
 log = logging.getLogger(__name__)
+HEADERS = ["node", "relation", "artifact", "attack"]
 
 
 def initialize_graph(ontologies):
@@ -64,14 +65,18 @@ def d3fend_summary(g: Graph):
         )
     )
 
-    headers = ["node", "relation", "artifact", "attack"]
-    return [headers] + [render_row(row) for row in ret]
+    return [HEADERS] + [render_row(row) for row in ret]
 
 
-def d3fend_summary_html(g: Graph):
+def d3fend_summary_html(g: Graph, aggregate=False):
     rows = d3fend_summary(g)
     df = pd.DataFrame(data=rows[1:], columns=rows[0])
-    html = df.to_html(formatters=[markdown_link_to_html_link] * 4, escape=False)
+    if aggregate:
+        df = df.groupby(["node", "artifact", "attack"], as_index=False).agg(",".join)
+    df = df[HEADERS]
+    html = df.to_html(
+        formatters=[markdown_link_to_html_link] * len(HEADERS), escape=False
+    )
     return html
 
 
@@ -94,7 +99,7 @@ def list_as_html_table(rows):
 def markdown_link_to_html_link(markdown_link):
     if markdown_link.startswith("["):
         label, url = markdown_link[1:].split("](")
-        return f'<a href="{url[:-1]}">{label}</a>'
+        return f'<a href="{url[:-1]}" target="_blank" rel="noopener noreferrer">{label}</a>'
     return markdown_link
 
 
@@ -102,12 +107,15 @@ def render_row(row):
     def _fix_url(url):
         url = str(url).replace("http://d3fend.mitre.org/ontologies/d3fend.owl#", "d3f:")
         url = str(url).replace("https://par-tec.it/example#", ":")
+        url = str(url).replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:")
         return url.rsplit("/", 1)[-1]
 
     node, relation, artifact, attack_id, attack_label = row
     artifact_name = artifact.split("#")[-1]
     artifact_url = f"https://next.d3fend.mitre.org/dao/artifact/d3f:{artifact_name}"
-    attack_url = f"https://attack.mitre.org/techniques/{attack_id}"
+
+    attack_url = attack_id.replace(".", "/")
+    attack_url = f"https://attack.mitre.org/techniques/{attack_url}"
     return (
         _fix_url(node),
         _fix_url(relation),

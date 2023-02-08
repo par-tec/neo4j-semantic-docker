@@ -1,15 +1,9 @@
 import tempfile
 
 import pandas as pd
+from app import d3fend_summary, initialize_graph, markdown_link_to_html_link, render_row
 from rdflib import Graph
 from rdflib.term import Literal, URIRef
-
-from .app import (
-    d3fend_summary,
-    initialize_graph,
-    markdown_link_to_html_link,
-    render_row,
-)
 
 turtle_text = """
 @prefix : <https://par-tec.it/example#> .
@@ -18,7 +12,8 @@ turtle_text = """
 
 :Client a :Node ;
     d3f:accesses :WebMail ;
-    d3f:uses d3f:LoginSession .
+    d3f:uses d3f:LoginSession ;
+    d3f:produces d3f:Email .
 
 :IMAP a d3f:FileSystem,
         d3f:MailService,
@@ -47,7 +42,8 @@ turtle_text = """
     rdfs:label "WebMail fab:fa-react fa:fa-envelope" ;
     d3f:accesses :IMAP,
         :SMTP ;
-    d3f:related d3f:Email .
+    d3f:related d3f:Email ;
+    d3f:uses d3f:Email .
 
 :Authorization a :Node ;
     rdfs:label "d3f:AuthorizationService fa:fa-user-secret" ;
