@@ -223,7 +223,9 @@ def render_mmd(event):
   """Render the `mermaid-graph` with `mermaid`.text"""
   log.warning(f"event {event}")
   text = Element("mermaid").value
-  mmd = mermaidAPI.render('buz', text)
+  text_mmd = app.markdown_to_mermaid(text) if app.guess_content(text) == "markdown" else text
+  log.warning(f"mermaid text: {text_mmd}")
+  mmd = mermaidAPI.render('buz', text_mmd)
   js.document.getElementById("mermaid-graph").innerHTML = mmd
 
 

@@ -54,6 +54,55 @@ turtle_text = """
 
 """
 
+markdown_text = """# Markdown
+
+## Components
+
+The infrastructure is made of the following components:
+
+- `Client`: a web browser
+- `WebMail`: a web application
+- `IMAP`: an IMAP server
+
+```mermaid
+graph
+subgraph Internet
+Client[Client fa:fa-globe]
+end
+subgraph Intranet
+WebMail[WebMail fab:fa-react]
+IMAP[IMAP fa:fa-envelope fa:fa-folder]
+end
+```
+
+## Backend infrastructure
+
+The backend infrastructure is made of a webmail
+contacting IMAP
+
+```mermaid
+graph
+WebMail --> |fa:fa-envelope| IMAP
+```
+
+## Frontend infrastructure
+
+Clients access the webmail
+
+```mermaid
+graph
+Client --> |fa:fa-envelope| WebMail
+```
+
+"""
+
+
+def test_parse_markdown_to_mermaid():
+    from app import markdown_to_mermaid
+
+    markdown_to_mermaid(markdown_text)
+    raise NotImplementedError
+
 
 def test_render_row():
     testcases = [

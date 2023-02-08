@@ -273,12 +273,10 @@ D3F_PROPERTIES = {
 def mermaid_to_rdf(mermaid):
     mermaid = mermaid.strip()
     # Ensure that the mermaid text starts with "graph "
-    if not mermaid.startswith("graph "):
-        raise ValueError("The mermaid text must start with 'graph '")
-    # Remove the "graph " from the mermaid text
-    mermaid = mermaid[6:]
-    # Split the mermaid text into lines
-    lines = mermaid.splitlines()
+    if not mermaid.startswith(("graph ", "graph")):
+        raise ValueError("The mermaid text must start with 'graph'")
+    # Split the mermaid text into lines, skipping the first line.
+    lines = mermaid.splitlines()[1:]
 
     for line in lines:
         for sentence in parse_line(line):

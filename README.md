@@ -1,9 +1,11 @@
 # Neo4j + D3FEND
 
 In this repo you can find an ongoing experiment of using D3FEND for design analysis on
-kubernetes / openshift deployment files.
+kubernetes / openshift deployment files and on mermaidjs diagrams.
 
 This is not for production :)
+
+- The [MermaidJS -> D3FEND is on github pages](https://par-tec.github.io/neo4j-semantic-docker/mermaid/)
 
 The steps are the following:
 
@@ -14,7 +16,7 @@ The steps are the following:
 
 This repo creates an RDF representation of a Kube deployment.
 
-```
+```bash
 tox -e kube-to-rdf -- ${MANIFEST_DIR} ${DEST_FILE}
 ls -la ${DEST_FILE}.ttl
 ```

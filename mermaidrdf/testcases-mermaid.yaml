@@ -59,3 +59,4 @@ testcases:
             - ':OAuth d3f:authenticates :Client .'
             - ':OAuth d3f:produces d3f:LoginSession .'
             - ':Client d3f:uses d3f:LoginSession .'
+            - ':OAuth d3f:produces d3f:AuthenticationLog .'

@@ -1,4 +1,5 @@
 import logging
+import re
 from time import time
 
 import pandas as pd
@@ -22,10 +23,27 @@ def initialize_graph(ontologies):
     return g
 
 
+def markdown_to_mermaid(text):
+    mermaid_graphs = mermaidrdf.extract_mermaid(text)
+    mermaid = "graph\n" + "\n".join(
+        re.sub(r"^graph.*\n", "", graph) for graph in mermaid_graphs
+    )
+    return mermaid
+
+
+def markdown_to_rdf(text):
+    mermaid_graphs = mermaidrdf.extract_mermaid(text)
+    turtle = ""
+    for graph in mermaid_graphs:
+        turtle += "\n" + mermaidrdf.parse_mermaid(graph)
+    return turtle
+
+
 def content_to_rdf(text):
     dispatch_table = {
         "mermaid": mermaidrdf.parse_mermaid,
         "kubernetes": kuberdf.parse_manifest,
+        "markdown": markdown_to_rdf,
     }
     text_type = guess_content(text)
     if text_type not in dispatch_table:
@@ -36,10 +54,12 @@ def content_to_rdf(text):
 
 def guess_content(text):
     """Guess the content type of the text: mermaid or kubernetes manifest."""
-    test = text.strip()
-    if test.startswith("graph"):
+    text = text.strip()
+    if text.startswith("graph"):
         return "mermaid"
-    if any(("kind" in x for x in yaml.safe_load_all(test))):
+    if "```mermaid" in text:
+        return "markdown"
+    if any(("kind" in x for x in yaml.safe_load_all(text))):
         return "kubernetes"
     return None
 
