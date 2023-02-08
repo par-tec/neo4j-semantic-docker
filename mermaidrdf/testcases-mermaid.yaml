@@ -60,3 +60,22 @@ testcases:
             - ':OAuth d3f:produces d3f:LoginSession .'
             - ':Client d3f:uses d3f:LoginSession .'
             - ':OAuth d3f:produces d3f:AuthenticationLog .'
+        container:
+          mermaid: |-
+            graph
+            app[fab:fa-docker Containerized Application]
+          expected:
+            - ':app a :Node .'
+            - ':app a d3f:ContainerProcess .'
+            - ':app d3f:related d3f:ContainerOrchestrationSoftware,d3f:ContainerImage .'
+            - ':app rdfs:label """fab:fa-docker Containerized Application""" .'
+        container-webapp:
+          mermaid: |-
+            graph
+            app[fab:fa-docker fab:fa-angular Containerized Application]
+          expected:
+            - ':app a :Node .'
+            - ':app a d3f:ContainerProcess .'
+            - ':app d3f:related d3f:ContainerOrchestrationSoftware,d3f:ContainerImage .'
+            - ':app rdfs:label """fab:fa-docker fab:fa-angular Containerized Application""" .'
+            - ':app a d3f:WebServerApplication,d3f:GraphicalUserInterface .'

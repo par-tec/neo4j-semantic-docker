@@ -76,14 +76,14 @@ SW_MAP = {
         "github",
     ): ("d3f:SoftwareDeploymentTool",),
     (
-        "docker",
+        "openshift",
         "kubernetes",
     ): ("d3f:ContainerOrchestrationSoftware",),
     ("fab:fa-docker",): ("d3f:ContainerProcess",),
-    ("fa-server",): ("d3f:Server",),
+    ("fa:fa-server",): ("d3f:Server",),
     ("fab:fa-python", "fab:fa-php"): ("d3f:ExecutableScript",),
-    ("fa-folder",): ("d3f:FileSystem",),
-    ("fa-desktop",): ("d3f:WebServerApplication", "d3f:GraphicalUserInterface"),
+    ("fa:fa-folder",): ("d3f:FileSystem",),
+    ("fa:fa-desktop",): ("d3f:WebServerApplication", "d3f:GraphicalUserInterface"),
     ("fab:fa-linux", "fab:fa-ubuntu", "fab:fa-redhat"): ("d3f:OperatingSystem",),
     ("fab:fa-angular", "fab:fa-react", "fab:fa-vuejs"): (
         "d3f:WebServerApplication",
@@ -94,7 +94,7 @@ FONTAWESOME_MAP = {
     ("fa-envelope",): ("d3f:Email",),
     ("fa-user-secret",): ("d3f:UserAccount",),
     ("fa-globe",): ("d3f:InternetNetworkTraffic",),
-    ("fa-docker",): ("d3f:ContainerOrchestrationSoftware",),
+    ("fa-docker",): ("d3f:ContainerOrchestrationSoftware", "d3f:ContainerImage"),
     ("fa-clock",): ("d3f:TaskSchedule",),
 }
 D3F_PROPERTIES = {
@@ -313,10 +313,11 @@ def render_node(id_, label, sep):
     label = label or id_
     for softwares, d3f_classes in SW_MAP.items():
         if any((x in label.lower() for x in softwares)):
+            log.info("Found property %s in label %s", softwares, label)
             rdf += [f":{id_} a {','.join(d3f_classes)} ."]
     for needles, d3f_classes in FONTAWESOME_MAP.items():
         if any((x in label.lower() for x in needles)):
-            log.info("Found %s in %s", needles, label)
+            log.info("Found relation %s in label %s", needles, label)
             rdf += [f":{id_} d3f:related {','.join(d3f_classes)} ."]
 
     return id_, rdf

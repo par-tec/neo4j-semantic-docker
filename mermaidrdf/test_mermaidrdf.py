@@ -60,6 +60,14 @@ def test_parse_line2(line, expected):
     assert ret == expected
 
 
+# def test_render_node_docker():
+#     """Test node parsing."""
+#     id_, rdf = render_node(
+#         "app", "fab:fa-docker fab:fa-angular Containerized Application", "(("
+#     )
+#     raise NotImplementedError
+
+
 def test_extract_bash_blocks_from_markdown():
     """Extract bash blocks form a markdown text"""
     text = Path("README.md").read_text()
