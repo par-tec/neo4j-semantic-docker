@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <py-config type="toml">
+    terminal = false
     packages = [
       "typing_extensions",
       "pyyaml",
@@ -52,14 +53,18 @@
 
   </head>
   <body>
-    <h1>Design secure applications with mermaid and D3FEND (experimental).</h1>
-    <p>Enter a mermaid graph in the left textarea, and click on the right tabs to see the D3FEND Summary and the RDF graph that can
-    be imported on a SPARQL/Neo4j server for further analysis</p>
+    <h1>Design & D3FEND
+    <a href="https://github.com/par-tec/neo4j-semantic-docker" target="_blank" rel="noopener noreferrer"><i class="fab fa-github float-end"></i></a>
+    </h1>
+    <h2>An experimental webapp to support secure architectural design.</h2>
+    <p>Design your IT architecture using a MermaidJS graph in the left editor. Then click on the "D3FEND" tab to see the possible attack paths. Explore the other features selecting the other tabs!</p>
 
     <div class="row" style="height: 100%">
       <div class="col-sm">
           <textarea id="mermaid" style="width: 100%; height: 100%;">
 graph LR
+
+%% Design here your architecture using MermaidJS syntax.
 
 %% The simple arrow maps to d3f:accesses
 Client --> WebMail
@@ -98,18 +103,33 @@ SMTP --o Authorization
     </div>
 
     <div class="tab-pane p-4 fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-      <h4>D3FEND Summary with artifacts and attacks. <button class="fas fa-copy" id="summary-copy"></button> </h4>
+      <p>D3FEND Summary with artifacts and attacks.</p>
+      <p><button class="fas fa-copy float-end" id="summary-copy"></button> </p>
       <div id="summary">summary placeholder </div>
     </div>
 
     <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
-      <pre class="result" id="graph-turtle" style="border-color: blue"> Results. </pre>
+      <p>This is a description of your IT architecture in <a href="https://en.wikipedia.org/wiki/Resource_Description_Framework" target="_blank" rel="noopener noreferrer">RDF</a> format. Nodes are described using MITRE categories. </p>
+      <p><button class="fas fa-copy float-end" id="turtle-graph-copy"></button></p>
+      <pre class="result" id="turtle-graph" style="border-color: blue">graph placeholder</pre>
     </div>
 
     <div class="tab-pane p-4 fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
-        <p>Inspect the semantic graphs `g` and `g1`.</p>
+        <p>This is a python console that you can use to inspect and query the semantic graphs `g` and `g1`.
+        Moreover, you can issue SPARQL queries using the `g.query()` method.
+        Currently it does only show the returned value of the last python line, so statements such as print(), while evaluated, are not shown.
+        </p>
         <py-repl output="replOutput">
-            list(g.namespaces())
+d3f = dict(g1.namespaces())["d3f"]
+nodes = g.query("""
+    PREFIX d3f: <%s>
+    SELECT ?s
+    WHERE {
+        ?s rdfs:subClassOf+ d3f:DefensiveTechnique .
+    }
+    LIMIT 5
+""" % d3f)
+list(nodes)
         </py-repl>
         <div id="replOutput"></div>
     </div>
@@ -204,7 +224,7 @@ def on_apply(event):
   log.warning("Creating RDF graph..")
   t0 = time()
   graph_ttl = app.content_to_rdf(Element("mermaid").value)
-  Element("graph-turtle").write(graph_ttl)
+  Element("turtle-graph").write(graph_ttl)
   log.warning("Created RDF graph in %d.." % (time()-t0,))
 
   log.warning("Creating summary..")
@@ -258,6 +278,7 @@ if not initialized:
     tab.addEventListener("click", create_proxy(on_apply))
   js.document.getElementById("mermaid").addEventListener("input", create_proxy(render_mmd))
   js.document.getElementById("summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("summary")))
+  js.document.getElementById("turtle-graph-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("turtle-graph")))
 
   initialized = True
     </py-script>

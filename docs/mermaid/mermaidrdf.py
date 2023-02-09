@@ -23,6 +23,7 @@ RE_LINE = re.compile(PAT_LINE)
 RE_NODE = re.compile(PAT_NODE)
 
 NS_DEFAULT = Namespace("https://par-tec.it/example#")
+NS_D3F = Namespace("http://d3fend.mitre.org/ontologies/d3fend.owl#")
 SW_MAP = {
     (
         "nginx",
@@ -286,7 +287,7 @@ def mermaid_to_rdf(mermaid):
 def parse_mermaid(mermaid: str):
     g = Graph()
     g.bind("", NS_DEFAULT)
-    g.bind("d3f", "http://d3fend.mitre.org/ontologies/d3fend.owl#")
+    g.bind("d3f", NS_D3F)
     g.bind("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
     turtle = """@prefix : <https://par-tec.it/example#> .
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .

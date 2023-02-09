@@ -72,7 +72,6 @@ you can query for existing paths (p) connecting:
   which are subclasses of d3f *artifact*s
 - *attack*s that affect the above *artifact*s
 
-
 ```cypher
 MATCH
     p=(instance) -[:rdf__type]-> ( :k8s__Kind)
@@ -90,15 +89,67 @@ other checks on them.
 
 Once you install it via
 
-        pip3 install pre-commit --user
+```bash
+pip3 install pre-commit --user
+```
 
 You can run it directly via
 
-        pre-commit run --all-files
-
+```bash
+pre-commit run --all-files
+```
 
 Or install it as a pre-commit hook
 
-        pre-commit install
+```bash
+pre-commit install
+```
 
-## .github/workflows
+## Webapp Diagram
+
+```mermaid
+graph LR
+
+subgraph SPA[Single-Page Application]
+direction LR
+MITRE
+index.html
+jslibs[fab:fa-js js libs]
+pylibs
+ApplicationTab
+end
+
+subgraph ApplicationTab
+InnerGraph[(InnerGraph\nfa:fa-diagram-project)]
+Report[[fa:fa-table Report]]
+diagram[[fa:fa-diagram-project diagram]]
+terminal[[fa:fa-terminal Terminal]]
+
+end
+
+index.html -->|uses| pylibs & jslibs
+
+jslibs -->|generate| diagram
+subgraph MITRE[MITRE DB Loaded in the app]
+
+CVE[CVE\nVulnerabilities] -.->|future| CWE[CWE\nWeakness]
+ATTACK -.->|future| CWE
+Artifacts
+ATTACK["Attacks"] --> Artifacts
+
+end
+subgraph pylibs [Python modules fab:fa-python]
+
+direction LR
+RDFMITRE[report.py]
+MermaidRDF[mermaidrdf.py]
+pyscript
+other[rdflib, pandas]
+end
+pylibs -->|generate| Report
+pylibs -->|generate| InnerGraph --->|references| Artifacts
+
+pylibs --o|load| InnerGraph
+
+pylibs -->|"pyscript CLI"| terminal
+```

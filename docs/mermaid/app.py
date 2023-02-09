@@ -17,6 +17,7 @@ def initialize_graph(ontologies):
     ts = time()
     log.info("Loading ontologies..")
     g = Graph()
+    g.bind("d3f", mermaidrdf.NS_D3F)
     for ontology in ontologies:
         g.parse(ontology, format="turtle")
     log.info(f"Ontologies loaded in {time()-ts}s")
