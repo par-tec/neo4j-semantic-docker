@@ -68,3 +68,8 @@ services:
         interval: 10s
         timeout: 10s
         retries: 10
+  ded:
+    build:
+      context: docs/mermaid
+    ports:
+    - 9090:8000

@@ -1,18 +1,79 @@
-# Neo4j + D3FEND
+# Graph tools + D3FEND
 
-In this repo you can find an ongoing experiment of using D3FEND for design analysis on
-kubernetes / openshift deployment files and on mermaidjs diagrams.
+In this repo you can find an ongoing experiment of using D3FEND for design analysis on:
+
+- MermaidJS diagrams - [see the Design & D3FEND webapp on github pages](https://par-tec.github.io/neo4j-semantic-docker/mermaid/)
+- Kubernetes / Openshift manifests files
 
 This is not for production :)
 
-- The [MermaidJS -> D3FEND is on github pages](https://par-tec.github.io/neo4j-semantic-docker/mermaid/)
+## MermaidJS
 
-The steps are the following:
+Folks that are not into the D3FEND project can use the Design & D3FEND webapp to extract a list of attack paths from a MermaidJS graph diagram.
+
+You can run the app via
+
+```bash
+docker-compose up -d ded
+```
+
+### Webapp Diagram
+
+```mermaid
+graph LR
+
+subgraph SPA[Single-Page Application]
+direction LR
+MITRE
+index.html
+jslibs[fab:fa-js js libs]
+pylibs
+ApplicationTab
+end
+
+subgraph ApplicationTab
+InnerGraph[(InnerGraph\nfa:fa-diagram-project)]
+Report[[fa:fa-table Report]]
+diagram[[fa:fa-diagram-project diagram]]
+terminal[[fa:fa-terminal Terminal]]
+
+end
+
+index.html -->|uses| pylibs & jslibs
+
+jslibs -->|generate| diagram
+subgraph MITRE[MITRE DB Loaded in the app]
+
+CVE[CVE\nVulnerabilities] -.->|future| CWE[CWE\nWeakness]
+ATTACK -.->|future| CWE
+Artifacts
+ATTACK["Attacks"] --> Artifacts
+
+end
+subgraph pylibs [Python modules fab:fa-python]
+
+direction LR
+RDFMITRE[report.py]
+MermaidRDF[mermaidrdf.py]
+pyscript
+other[rdflib, pandas]
+end
+pylibs -->|generate| Report
+pylibs -->|generate| InnerGraph --->|references| Artifacts
+
+pylibs --o|load| InnerGraph
+
+pylibs -->|"pyscript CLI"| terminal
+```
+
+## Kubernetes / Openshift
+
+For further security analysis, you need a graph database and some RDF knowledge. This repo provides an openshift deployment for a Neo4j instance and a python script to transform Kubernetes manifests into RDF:
 
 1. transform the Kubernetes manifests into RDF;
 2. load the RDF into the Neo4j instance you find in docker-compose.
 
-## Running
+### Running
 
 This repo creates an RDF representation of a Kube deployment.
 
@@ -103,53 +164,4 @@ Or install it as a pre-commit hook
 
 ```bash
 pre-commit install
-```
-
-## Webapp Diagram
-
-```mermaid
-graph LR
-
-subgraph SPA[Single-Page Application]
-direction LR
-MITRE
-index.html
-jslibs[fab:fa-js js libs]
-pylibs
-ApplicationTab
-end
-
-subgraph ApplicationTab
-InnerGraph[(InnerGraph\nfa:fa-diagram-project)]
-Report[[fa:fa-table Report]]
-diagram[[fa:fa-diagram-project diagram]]
-terminal[[fa:fa-terminal Terminal]]
-
-end
-
-index.html -->|uses| pylibs & jslibs
-
-jslibs -->|generate| diagram
-subgraph MITRE[MITRE DB Loaded in the app]
-
-CVE[CVE\nVulnerabilities] -.->|future| CWE[CWE\nWeakness]
-ATTACK -.->|future| CWE
-Artifacts
-ATTACK["Attacks"] --> Artifacts
-
-end
-subgraph pylibs [Python modules fab:fa-python]
-
-direction LR
-RDFMITRE[report.py]
-MermaidRDF[mermaidrdf.py]
-pyscript
-other[rdflib, pandas]
-end
-pylibs -->|generate| Report
-pylibs -->|generate| InnerGraph --->|references| Artifacts
-
-pylibs --o|load| InnerGraph
-
-pylibs -->|"pyscript CLI"| terminal
 ```
