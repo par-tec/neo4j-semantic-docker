@@ -93,3 +93,51 @@ graph TD
 
 Client --> WAF[Web Application Firewall fa:fa-shield-alt] --> WebApp --> API[API fa:fa-server]
 ```
+
+## icons
+
+```mermaid
+
+graph
+A["
+# OK
+fa:fa-lock
+fa:fa-lock-open
+fa:fa-unlock
+fa:fa-key
+fa:fa-fingerprint
+fa:fa-user-lock
+fa:fa-user-unlock
+fa:fa-user-clock
+fa:fa-alarm-clock
+fa:fa-compass
+fa:fa-globe
+fa:fa-language
+fa:fa-eyes
+fa:fa-rocket
+fa:fa-gear
+fa:fa-ban
+fa:fa-cube
+fa:fa-cubes
+fa:fa-bug
+fa:fa-square-full
+fa:fa-hexagon
+# KO
+firewall fa:fa-block-brick
+firewall fa:fa-block-brick-fire
+backup fa:fa-clock-rotate-left
+fa:fa-handcuffs
+fa:fa-shield-keyhole
+fa:fa-lock-keyhole
+fa:fa-unlock-keyhole
+fa:fa-lock-hashtag
+fa:fa-lock-a
+# user
+locks: fa:fa-vault
+locks: fa:fa-file-lock
+locks: fa:fa-binary-lock
+locks: fa:fa-nfc-lock
+locks: fa:fa-signature-lock
+"]
+
+```

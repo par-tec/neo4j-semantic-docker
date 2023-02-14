@@ -7,7 +7,7 @@ from rdflib import Graph, URIRef
 from kuberdf import DC, Service, parse_manifests, parse_resource
 
 
-@pytest.mark.parametrize("manifest_yaml", Path(".").glob("**/*.yaml"))
+@pytest.mark.parametrize("manifest_yaml", Path(".").glob("**/kuberdf/*.yaml"))
 def test_parse_resource(manifest_yaml):
     """Parse an openshift manifest file
     and convert it to an RDF resource

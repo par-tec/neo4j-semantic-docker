@@ -6,12 +6,16 @@ import pytest
 import yaml
 from rdflib import Graph
 
-from . import extract_mermaid, mermaid_to_rdf, parse_line2, parse_mermaid
+from mermaidrdf import extract_mermaid, mermaid_to_rdf, parse_line2, parse_mermaid
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-TESTCASES = yaml.safe_load(Path("testcases-mermaid.yaml").read_text())["testcases"]
+TESTCASES = yaml.safe_load(
+    (
+        Path(__file__).parent / "data" / "mermaidrdf" / "testcases-mermaid.yaml"
+    ).read_text()
+)["testcases"]
 
 
 @pytest.mark.parametrize(
