@@ -172,90 +172,147 @@ D3F_PROPERTIES:
 - verifies
 - writes
 FONTAWESOME_MAP:
-  ? - fa-clock
-  : - d3f:TaskSchedule
-  ? - fa-docker
-  : - d3f:ContainerOrchestrationSoftware
-    - d3f:ContainerImage
-  ? - fa-envelope
-  : - d3f:Email
-  ? - fa-globe
-  : - d3f:InternetNetworkTraffic
-  ? - fa-user-secret
-  : - d3f:UserAccount
+- artifacts:
+  - d3f:TaskSchedule
+  labels:
+  - fa-clock
+- artifacts:
+  - d3f:ContainerOrchestrationSoftware
+  - d3f:ContainerImage
+  labels:
+  - fa-docker
+- artifacts:
+  - d3f:Email
+  - d3f:MailNetworkTraffic
+  labels:
+  - fa-envelope
+- artifacts:
+  - d3f:InternetNetworkTraffic
+  labels:
+  - fa-globe
+- artifacts:
+  - d3f:UserAccount
+  labels:
+  - fa-user-secret
 SW_MAP:
-  ? - auth0
-    - okta
-    - keycloak
-    - oauth
-  : - d3f:AuthorizationServer
-    - d3f:AuthenticationService
-  ? - avas
-    - clamav
-    - antispam
-  : - d3f:ApplicationLayerFirewall
-    - d3f:MailService
-  ? - dns
-    - bind
-  : - d3f:DNSServer
-  ? - elasticsearch
-    - solr
-  : &id002
+- artifacts:
+  - d3f:AuthorizationServer
+  - d3f:AuthenticationService
+  labels:
+  - auth0
+  - okta
+  - keycloak
+  - oauth
+- artifacts:
+  - d3f:ApplicationLayerFirewall
+  - d3f:MailService
+  labels:
+  - avas
+  - clamav
+  - antispam
+- artifacts:
+  - d3f:DNSServer
+  labels:
+  - dns
+  - bind
+- artifacts:
   - d3f:DatabaseServer
-  ? - fa:fa-desktop
-  : &id001
+  labels:
+  - elasticsearch
+  - solr
+- artifacts:
   - d3f:WebServerApplication
   - d3f:GraphicalUserInterface
-  ? - fa:fa-folder
-  : - d3f:FileSystem
-  ? - fa:fa-server
-  : - d3f:Server
-  ? - fab:fa-angular
-    - fab:fa-react
-    - fab:fa-vuejs
-  : *id001
-  ? - fab:fa-docker
-  : - d3f:ContainerProcess
-  ? - fab:fa-linux
-    - fab:fa-ubuntu
-    - fab:fa-redhat
-  : - d3f:OperatingSystem
-  ? - fab:fa-python
-    - fab:fa-php
-  : - d3f:ExecutableScript
-  ? - gitlab
-    - github
-    - bitbucket
-    - fab:fa-github
-    - fab:fa-gitlab
-    - fab:fa-git
-  : - d3f:VersionControlSystem
-  ? - imap
-    - lmtp
-    - dovecot
-  : - d3f:MailService
-  ? - jenkins
-    - gitlab-ci
-    - github
-  : - d3f:SoftwareDeploymentTool
-  ? - mysql
-    - mariadb
-    - postgresql
-    - mongodb
-  : *id002
-  ? - nginx
-    - apache
-    - httpd
-  : - d3f:WebServer
-  ? - openshift
-    - kubernetes
-  : - d3f:ContainerOrchestrationSoftware
-  ? - postfix
-    - smtp
-  : - d3f:MailService
-    - d3f:MessageTransferAgent
-  ? - rabbitmq
-    - kafka
-    - pulsar
-  : - d3f:DatabaseServer
-    - d3f:Server
+  labels:
+  - fa:fa-desktop
+- artifacts:
+  - d3f:FileSystem
+  labels:
+  - fa:fa-folder
+- artifacts:
+  - d3f:Server
+  labels:
+  - fa:fa-server
+- artifacts:
+  - d3f:WebServerApplication
+  - d3f:GraphicalUserInterface
+  labels:
+  - fab:fa-angular
+  - fab:fa-react
+  - fab:fa-vuejs
+- artifacts:
+  - d3f:ContainerProcess
+  labels:
+  - fab:fa-docker
+- artifacts:
+  - d3f:OperatingSystem
+  labels:
+  - fab:fa-linux
+  - fab:fa-ubuntu
+  - fab:fa-redhat
+- artifacts:
+  - d3f:ExecutableScript
+  labels:
+  - fab:fa-python
+  - fab:fa-php
+- artifacts:
+  - d3f:VersionControlSystem
+  labels:
+  - gitlab
+  - github
+  - bitbucket
+  - fab:fa-github
+  - fab:fa-gitlab
+  - fab:fa-git
+- artifacts:
+  - d3f:MailService
+  labels:
+  - imap
+  - lmtp
+  - dovecot
+- artifacts:
+  - d3f:SoftwareDeploymentTool
+  labels:
+  - jenkins
+  - gitlab-ci
+  - github
+- artifacts:
+  - d3f:DatabaseServer
+  labels:
+  - mysql
+  - mariadb
+  - postgresql
+  - mongodb
+- artifacts:
+  - d3f:WebServer
+  labels:
+  - nginx
+  - apache
+  - httpd
+- artifacts:
+  - d3f:ContainerOrchestrationSoftware
+  labels:
+  - openshift
+  - kubernetes
+- artifacts:
+  - d3f:MailService
+  - d3f:MessageTransferAgent
+  labels:
+  - postfix
+  - smtp
+- artifacts:
+  - d3f:DatabaseServer
+  - d3f:Server
+  labels:
+  - rabbitmq
+  - kafka
+  - pulsar
+#
+# Infer further information to the graph, based on the relations
+#
+INFERRED_RELATIONS:
+- relation:  "d3f:authenticates"
+  predicates:
+    - ":{subject} d3f:produces d3f:LoginSession ."
+    - ":{object} d3f:uses d3f:LoginSession ."
+    - ":{subject} d3f:produces d3f:AuthenticationLog ."

@@ -90,7 +90,8 @@ SMTP --o Authorization
 <div class="col-sm">
   <ul class="nav nav-tabs bg-primary" id="myTab" role="tablist">
     <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Mermaid</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">D3FEND</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">ATT&CK</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab7-tab" data-bs-toggle="tab" href="#tab7" role="tab" aria-controls="tab7" aria-selected="false">D3FEND</a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">RDF graph</i></a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Console</i></a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab5-tab" data-bs-toggle="tab" href="#tab5" role="tab" aria-controls="tab5" aria-selected="false">Help</a></li>
@@ -104,10 +105,17 @@ SMTP --o Authorization
     </div>
 
     <div class="tab-pane p-4 fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-      <p>D3FEND Summary with artifacts and attacks.</p>
-      <p><button class="fas fa-copy float-end" id="summary-copy"></button> </p>
-      <div id="summary">summary placeholder </div>
+      <p>ATT&CK Summary with artifacts and attacks.</p>
+      <p><button class="fas fa-copy float-end" id="attack-summary-copy"></button> </p>
+      <div id="attack-summary">att&ck summary placeholder </div>
     </div>
+
+    <div class="tab-pane p-4 fade" id="tab7" role="tabpanel" aria-labelledby="tab7-tab">
+      <p>D3FEND Summary with artifacts and defeses.</p>
+      <p><button class="fas fa-copy float-end" id="d3fend-summary-copy"></button> </p>
+      <div id="d3fend-summary">d3f summary placeholder </div>
+    </div>
+
 
     <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
       <p>This is a description of your IT architecture in <a href="https://en.wikipedia.org/wiki/Resource_Description_Framework" target="_blank" rel="noopener noreferrer">RDF</a> format. Nodes are described using MITRE categories. </p>
@@ -151,7 +159,7 @@ list(nodes)
 
         <li>Once you have created your mermaid graph, you can click on the D3FEND tab to see the corresponding D3FEND graph. The D3FEND graph is represented as a turtle file. You can copy and paste it in your favorite RDF editor (e.g. <a href="https://www.w3.org/RDF/Validator/">W3C RDF validator</a>).
 
-        <li>The "Summary" tab shows a table with the main entities of the D3FEND graph and the attacks associated with the specific DigitalArtifacts. The table contains hyperlinks to the corresponding D3FEND classes and ATT&CK techniques.
+        <li>The "Summary" tabs shows a table with the main entities of the D3FEND graph and the attacks associated with the specific DigitalArtifacts. The table contains hyperlinks to the corresponding D3FEND classes and ATT&CK techniques.
         </p>
 
         <p><h4>Font-awesome reference</h4>
@@ -232,12 +240,14 @@ def on_apply(event):
   t0 = time()
   g1 = rdflib.Graph()
   g1.parse(data=graph_ttl, format="turtle")
-  html = app.d3fend_summary_html(g + g1, aggregate=True)
+  for (id_, f) in [("attack", app.attack_summary_html), ("d3fend", app.d3fend_summary_html)]:
+    try:
+      html = f(g + g1, aggregate=True)
+      Element(f"{id_}-summary").clear()
+      Element(f"{id_}-summary").element.innerHTML = html
+    except Exception as e:
+     log.error(f"Error in {id_} summary: {e}")
   log.warning("Created summary in %d.." % (time()-t0,))
-
-  summary = Element("summary")
-  summary.clear()
-  summary.element.innerHTML = html
 
 
 def render_mmd(event):
@@ -278,7 +288,8 @@ if not initialized:
       continue
     tab.addEventListener("click", create_proxy(on_apply))
   js.document.getElementById("mermaid").addEventListener("input", create_proxy(render_mmd))
-  js.document.getElementById("summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("summary")))
+  js.document.getElementById("attack-summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("attack-summary")))
+  js.document.getElementById("d3fend-summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("d3fend-summary")))
   js.document.getElementById("turtle-graph-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("turtle-graph")))
 
   initialized = True

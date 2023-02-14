@@ -1,9 +1,8 @@
 import tempfile
 
 import pandas as pd
-from app import d3fend_summary, initialize_graph, markdown_link_to_html_link, render_row
+from app import d3fend_summary, initialize_graph, markdown_link_to_html_link
 from rdflib import Graph
-from rdflib.term import Literal, URIRef
 
 turtle_text = """
 @prefix : <https://par-tec.it/example#> .
@@ -104,25 +103,10 @@ def test_parse_markdown_to_mermaid():
     raise NotImplementedError
 
 
-def test_render_row():
-    testcases = [
-        (
-            URIRef("https://par-tec.it/example#Authorization"),
-            URIRef("http://d3fend.mitre.org/ontologies/d3fend.owl#related"),
-            URIRef("http://d3fend.mitre.org/ontologies/d3fend.owl#UserAccount"),
-            Literal("T1136"),
-            Literal("Create Account"),
-        )
-    ]
-    for row in testcases:
-        render_row(row)
-        raise NotImplementedError
-
-
 def test_as_graph():
     g = Graph()
     g.parse(data=turtle_text, format="turtle")
-    g.parse("../d3fend.ttl", format="turtle")
+    g.parse("d3fend-short.ttl", format="turtle")
     html = d3fend_summary(g)
     deleteme_html = tempfile.NamedTemporaryFile(suffix=".html")
     deleteme_html.write_text(html)
@@ -130,7 +114,7 @@ def test_as_graph():
 
 
 def test_d3fend_summary_pd():
-    g = initialize_graph(["../d3fend.ttl"])
+    g = initialize_graph(["d3fend-short.ttl"])
     g.parse(data=turtle_text, format="turtle")
     rows = d3fend_summary(g)
     df = pd.DataFrame(rows[1:], columns=rows[0])

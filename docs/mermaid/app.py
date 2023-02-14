@@ -10,7 +10,7 @@ import kuberdf
 import mermaidrdf
 
 log = logging.getLogger(__name__)
-HEADERS = ["node", "relation", "artifact", "attack"]
+HEADERS = ["node", "relation", "artifact", "technique"]
 
 
 def initialize_graph(ontologies):
@@ -65,7 +65,7 @@ def guess_content(text):
     return None
 
 
-def d3fend_summary(g: Graph):
+def attack_summary(g: Graph):
     ret = list(
         g.query(
             """
@@ -74,7 +74,7 @@ def d3fend_summary(g: Graph):
         prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
         SELECT DISTINCT
-            ?node ?relation ?artifact ?attack_id ?attack_label
+            ?node ?relation ?artifact ?attack_id ?attack_label ?attack
         WHERE {
             ?node a :Node .
             ?node ?relation ?artifact .
@@ -89,11 +89,43 @@ def d3fend_summary(g: Graph):
     return [HEADERS] + [render_row(row) for row in ret]
 
 
+def d3fend_summary(g: Graph):
+    ret = list(
+        g.query(
+            """
+        prefix : <https://par-tec.it/example#>
+        prefix d3f: <http://d3fend.mitre.org/ontologies/d3fend.owl#>
+        prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+        SELECT DISTINCT
+            ?node ?relation ?artifact ?d3fend_id ?d3fend_label ?d3fend
+        WHERE {
+            ?node a :Node .
+            ?node ?relation ?artifact .
+            ?d3fend d3f:d3fend-id ?d3fend_id .
+            ?d3fend ?defends ?artifact .
+            ?d3fend rdfs:label ?d3fend_label .
+            }
+        """
+        )
+    )
+
+    return [HEADERS] + [render_row(row) for row in ret]
+
+
 def d3fend_summary_html(g: Graph, aggregate=False):
-    rows = d3fend_summary(g)
+    return f_summary_html(g, aggregate, d3fend_summary)
+
+
+def attack_summary_html(g: Graph, aggregate=False):
+    return f_summary_html(g, aggregate, attack_summary)
+
+
+def f_summary_html(g: Graph, aggregate=False, summary_function=d3fend_summary):
+    rows = summary_function(g)
     df = pd.DataFrame(data=rows[1:], columns=rows[0])
     if aggregate:
-        df = df.groupby(["node", "artifact", "attack"], as_index=False).agg(",".join)
+        df = df.groupby(["node", "artifact", "technique"], as_index=False).agg(",".join)
     df = df[HEADERS]
     html = df.to_html(
         formatters=[markdown_link_to_html_link] * len(HEADERS), escape=False
@@ -125,21 +157,33 @@ def markdown_link_to_html_link(markdown_link):
 
 
 def render_row(row):
+    """
+    https://next.d3fend.mitre.org/technique/d3f:Client-serverPayloadProfiling/
+    """
+
     def _fix_url(url):
         url = str(url).replace("http://d3fend.mitre.org/ontologies/d3fend.owl#", "d3f:")
         url = str(url).replace("https://par-tec.it/example#", ":")
         url = str(url).replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:")
         return url.rsplit("/", 1)[-1]
 
-    node, relation, artifact, attack_id, attack_label = row
+    def _get_technique_url(technique_id, technique_uri):
+        if technique_id.startswith("T"):
+            attack_url = technique_id.replace(".", "/")
+            return f"https://attack.mitre.org/techniques/{attack_url}"
+        if technique_id.startswith("D3"):
+            d3fend_url = technique_uri.split("#", 1)[-1]
+            return f"https://next.d3fend.mitre.org/technique/d3f:{d3fend_url}"
+        raise NotImplementedError(technique_id, technique_uri)
+
+    node, relation, artifact, technique_id, technique_label, technique_uri = row
     artifact_name = artifact.split("#")[-1]
     artifact_url = f"https://next.d3fend.mitre.org/dao/artifact/d3f:{artifact_name}"
 
-    attack_url = attack_id.replace(".", "/")
-    attack_url = f"https://attack.mitre.org/techniques/{attack_url}"
+    technique_url = _get_technique_url(technique_id, technique_uri)
     return (
         _fix_url(node),
         _fix_url(relation),
         f"[{artifact_name}]({artifact_url})",
-        f"[{attack_id} - {attack_label}]({attack_url})",
+        f"[{technique_id} - {technique_label}]({technique_url})",
     )

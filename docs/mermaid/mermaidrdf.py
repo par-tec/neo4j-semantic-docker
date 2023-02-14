@@ -1,6 +1,9 @@
 import logging
 import re
+from collections import defaultdict
+from pathlib import Path
 
+import yaml
 from rdflib import Graph, Namespace
 
 log = logging.getLogger(__name__)
@@ -24,251 +27,14 @@ RE_NODE = re.compile(PAT_NODE)
 
 NS_DEFAULT = Namespace("https://par-tec.it/example#")
 NS_D3F = Namespace("http://d3fend.mitre.org/ontologies/d3fend.owl#")
-SW_MAP = {
-    (
-        "nginx",
-        "apache",
-        "httpd",
-    ): ("d3f:WebServer",),
-    (
-        "mysql",
-        "mariadb",
-        "postgresql",
-        "mongodb",
-    ): ("d3f:DatabaseServer",),
-    (
-        "rabbitmq",
-        "kafka",
-        "pulsar",
-    ): ("d3f:DatabaseServer", "d3f:Server"),
-    (
-        "elasticsearch",
-        "solr",
-    ): ("d3f:DatabaseServer",),
-    (
-        "postfix",
-        "smtp",
-    ): ("d3f:MailService", "d3f:MessageTransferAgent"),
-    ("dns", "bind"): ("d3f:DNSServer",),
-    ("auth0", "okta", "keycloak", "oauth"): (
-        "d3f:AuthorizationServer",
-        "d3f:AuthenticationService",
-    ),
-    ("avas", "clamav", "antispam"): (
-        "d3f:ApplicationLayerFirewall",
-        "d3f:MailService",
-    ),
-    (
-        "imap",
-        "lmtp",
-        "dovecot",
-    ): ("d3f:MailService",),
-    (
-        "gitlab",
-        "github",
-        "bitbucket",
-        "fab:fa-github",
-        "fab:fa-gitlab",
-        "fab:fa-git",
-    ): ("d3f:VersionControlSystem",),
-    (
-        "jenkins",
-        "gitlab-ci",
-        "github",
-    ): ("d3f:SoftwareDeploymentTool",),
-    (
-        "openshift",
-        "kubernetes",
-    ): ("d3f:ContainerOrchestrationSoftware",),
-    ("fab:fa-docker",): ("d3f:ContainerProcess",),
-    ("fa:fa-server",): ("d3f:Server",),
-    ("fab:fa-python", "fab:fa-php"): ("d3f:ExecutableScript",),
-    ("fa:fa-folder",): ("d3f:FileSystem",),
-    ("fa:fa-desktop",): ("d3f:WebServerApplication", "d3f:GraphicalUserInterface"),
-    ("fab:fa-linux", "fab:fa-ubuntu", "fab:fa-redhat"): ("d3f:OperatingSystem",),
-    ("fab:fa-angular", "fab:fa-react", "fab:fa-vuejs"): (
-        "d3f:WebServerApplication",
-        "d3f:GraphicalUserInterface",
-    ),
-}
-FONTAWESOME_MAP = {
-    ("fa-envelope",): ("d3f:Email",),
-    ("fa-user-secret",): ("d3f:UserAccount",),
-    ("fa-globe",): ("d3f:InternetNetworkTraffic",),
-    ("fa-docker",): ("d3f:ContainerOrchestrationSoftware", "d3f:ContainerImage"),
-    ("fa-clock",): ("d3f:TaskSchedule",),
-}
-D3F_PROPERTIES = {
-    "abuses",
-    "accessed-by",
-    "broader",
-    "broader-transitive",
-    "cited-by",
-    "claimed-by",
-    "contained-by",
-    "created-by",
-    "deceives",
-    "depends-on",
-    "employed-by",
-    "evaluated-by",
-    "evaluator",
-    "exactly",
-    "expected-latency",
-    "impairs",
-    "inventoried-by",
-    "invoked-by",
-    "loaded-by",
-    "mapped-by",
-    "may-be-deceived-by",
-    "may-be-detected-by",
-    "may-be-evicted-by",
-    "may-be-hardened-against-by",
-    "may-be-isolated-by",
-    "modified-by",
-    "modifies-part",
-    "narrower",
-    "narrower-transitive",
-    "process-parent",
-    "produced-by",
-    "producer",
-    "publisher",
-    "recorded-in",
-    "related",
-    "seller",
-    "submitter",
-    "used-by",
-    "validator",
-    "writes",
-    "addressed-by",
-    "attached-to",
-    "authorizes",
-    "configures",
-    "connects",
-    "creator",
-    "deceives-with",
-    "dependent",
-    "extends",
-    "has-account",
-    "has-dependent",
-    "has-feature",
-    "has-implementation",
-    "has-location",
-    "has-recipient",
-    "has-sender",
-    "hides",
-    "installs",
-    "kb-reference",
-    "license",
-    "limits",
-    "may-be-contained-by",
-    "may-be-created-by",
-    "may-be-invoked-by",
-    "may-be-modified-by",
-    "may-deceive",
-    "may-detect",
-    "may-disable",
-    "may-execute",
-    "may-harden",
-    "may-isolate",
-    "neutralizes",
-    "owns",
-    "process-ancestor",
-    "process-image-path",
-    "process-user",
-    "provider",
-    "provides",
-    "publishes",
-    "summarizes",
-    "terminates",
-    "unmounts",
-    "updates",
-    "use-limits",
-    "assessed-by",
-    "deletes",
-    "detects",
-    "drives",
-    "enabled-by",
-    "features",
-    "forges",
-    "implemented-by",
-    "implements",
-    "injects",
-    "interprets",
-    "kb-reference-of",
-    "may-be-accessed-by",
-    "may-be-tactically-associated-with",
-    "may-counter",
-    "may-interpret",
-    "may-map",
-    "may-run",
-    "obfuscates",
-    "originates-from",
-    "queries",
-    "sells",
-    "strengthens",
-    "validates",
-    "author",
-    "cites",
-    "copies",
-    "encrypts",
-    "has-evidence",
-    "manages",
-    "may-evict",
-    "may-query",
-    "process-property",
-    "records",
-    "addresses",
-    "assesses",
-    "claims",
-    "d3fend-kb-object-property",
-    "disables",
-    "evicts",
-    "has-member",
-    "isolates",
-    "latency",
-    "member-of",
-    "attack-may-be-countered-by",
-    "d3fend-tactical-verb-property",
-    "evaluates",
-    "may-counter-attack",
-    "may-transfer",
-    "verifies",
-    "counters",
-    "runs",
-    "loads",
-    "may-add",
-    "reads",
-    "blocks",
-    "filters",
-    "semantic-relation",
-    "spoofs",
-    "hardens",
-    "inventories",
-    "uses",
-    "authenticates",
-    "may-produce",
-    "adds",
-    "executes",
-    "monitors",
-    "restricts",
-    "maps",
-    "may-create",
-    "may-be-associated-with",
-    "invokes",
-    "may-access",
-    "d3fend-catalog-object-property",
-    "may-contain",
-    "may-invoke",
-    "creates",
-    "enables",
-    "contains",
-    "analyzes",
-    "accesses",
-    "may-modify",
-    "associated-with",
-    "produces",
-    "modifies",
-}
+DATAFILE = Path(__file__).parent / "mermaidrdf.yaml"
+DATA = yaml.safe_load(DATAFILE.read_text())
+SW_MAP = {tuple(x["labels"]): x["artifacts"] for x in DATA["SW_MAP"]}
+FONTAWESOME_MAP = {tuple(x["labels"]): x["artifacts"] for x in DATA["FONTAWESOME_MAP"]}
+D3F_PROPERTIES = set(DATA["D3F_PROPERTIES"])
+D3F_INFERRED_RELATIONS = defaultdict(
+    list, **{x["relation"]: x["predicates"] for x in DATA["INFERRED_RELATIONS"]}
+)
 
 
 def mermaid_to_rdf(mermaid):
@@ -392,10 +158,8 @@ def _parse_relation(src, dst, predicate, relation):
     if relation.startswith("d3f:") and relation[4:] in D3F_PROPERTIES:
         yield f":{src} {relation} :{dst} ."
 
-        if relation == "d3f:authenticates":
-            yield f":{src} d3f:produces d3f:LoginSession ."
-            yield f":{dst} d3f:uses d3f:LoginSession ."
-            yield f":{src} d3f:produces d3f:AuthenticationLog ."
+        for predicate in D3F_INFERRED_RELATIONS[relation]:
+            yield predicate.format(subject=src, object=dst)
         return
 
     # Explicit the relationship.
