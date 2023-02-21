@@ -86,7 +86,9 @@ def render_node(id_, label, sep):
         if any((x in label.lower() for x in needles)):
             log.info("Found relation %s in label %s", needles, label)
             rdf += [f":{id_} d3f:related {','.join(d3f_classes)} ."]
-
+    for needle in re.findall("(d3f:[a-zA-Z-0-9]+)", label):
+        log.info("Found class %s in label %s", needle, label)
+        rdf += [f":{id_} a {needle} ."]
     return id_, rdf
 
 

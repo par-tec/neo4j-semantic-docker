@@ -21,6 +21,15 @@ testcases:
                 ':A rdfs:label """mysql""" .',
                 ":B d3f:accesses :C ."
                 ]
+        label_d3f:
+            mermaid: |-
+                graph TD
+                D3fend[[Example d3f:NetworkNode]]
+            expected:
+            - :D3fend a :Node .
+            - :D3fend a d3f:NetworkNode .
+            - :D3fend rdfs:label """Example d3f:NetworkNode""" .
+            - :D3fend a d3f:Server .
         sqlquery:
             mermaid: |-
                 graph TD

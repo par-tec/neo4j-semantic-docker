@@ -196,6 +196,10 @@ FONTAWESOME_MAP:
   - fa-user-secret
 SW_MAP:
 - artifacts:
+  - d3f:NetworkNode
+  labels:
+  - fa-router
+- artifacts:
   - d3f:AuthorizationServer
   - d3f:AuthenticationService
   labels:
