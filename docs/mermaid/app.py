@@ -40,6 +40,11 @@ def markdown_to_rdf(text):
     return turtle
 
 
+def rdf_to_mermaid(g: Graph):
+    mermaid = mermaidrdf.MermaidRDF(g)
+    return mermaid.render()
+
+
 def content_to_rdf(text):
     dispatch_table = {
         "mermaid": mermaidrdf.parse_mermaid,
@@ -57,6 +62,7 @@ def guess_content(text):
     """Guess the content type of the text: mermaid or kubernetes manifest."""
     text = text.strip()
     if text.startswith("graph"):
+        # XXX: we still need to strip '---\ntitle: ...\n---'
         return "mermaid"
     if "```mermaid" in text:
         return "markdown"

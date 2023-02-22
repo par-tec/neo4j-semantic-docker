@@ -7,22 +7,28 @@ from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 NS_K8S = Namespace("urn:k8s:")
 
 
-def parse_manifests(manifests: Path, outfile: str):
+def parse_manifests(manifests: Path, outfile: str, ns_from_file=False):
     g = Graph()
     g.parse(data=(Path(__file__).parent / "ontology.ttl").read_text(), format="turtle")
     g.bind("k8s", NS_K8S)
     for f in manifests:
+        ns = f.stem if ns_from_file else None
         for manifest in yaml.safe_load_all(f.read_text()):
             if "kind" not in manifest:
                 continue
-            for triple in parse_resource(manifest):
+            for triple in parse_resource(manifest, ns=ns):
                 g.add(triple)
     g.serialize(f"{outfile}.ttl", format="turtle")
     g.serialize(f"{outfile}.jsonld", format="application/ld+json")
 
 
-def parse_manifest(manifest_text: str):
+def parse_manifest(manifest_text: str) -> str:
     """Parse a manifest text and return a list of triples"""
+    g = parse_manifest_as_graph(manifest_text)
+    return g.serialize(format="turtle")
+
+
+def parse_manifest_as_graph(manifest_text: str) -> Graph:
     g = Graph()
     g.bind("k8s", NS_K8S)
     for manifest in yaml.safe_load_all(manifest_text):
@@ -30,7 +36,7 @@ def parse_manifest(manifest_text: str):
             continue
         for triple in parse_resource(manifest):
             g.add(triple)
-    return g.serialize(format="turtle")
+    return g
 
 
 def parse_url(url):
@@ -50,7 +56,7 @@ def parse_url(url):
 
 class K8Resource:
     @staticmethod
-    def factory(manifest):
+    def factory(manifest, ns=None):
         classmap = {
             "Route": Route,
             "Service": Service,
@@ -63,22 +69,24 @@ class K8Resource:
             "ConsolePlugin": None,
         }
         kind = manifest.get("kind")
-        if clz := classmap.get(kind):
-            return clz(manifest)
-        return K8Resource(manifest)
+        clz = classmap.get(kind, K8Resource)
+        return clz(manifest, ns=ns)
 
-    def __init__(self, manifest=None) -> None:
-
+    def __init__(self, manifest=None, ns=None) -> None:
         self.kind = manifest["kind"]
         self.metadata = manifest["metadata"]
         self.name = self.metadata["name"]
-        self.namespace = manifest["metadata"].get("namespace", "default")
+        self.namespace = manifest["metadata"].get("namespace", ns or "default")
         self.ns = NS_K8S[self.namespace]
         self.spec = manifest.get("spec", {})
         if self.kind == "Namespace":
             self.uri = self.ns
         else:
             self.uri = self.ns + f"/{self.kind}/{self.name}"
+
+        # Set the application.
+        app = self.metadata.get("labels", {}).get("app")
+        self.app = URIRef(self.ns + f"/Application/{app}") if app else None
 
     def triples_kind(self):
         yield (NS_K8S[self.kind], RDF.type, NS_K8S.Kind)
@@ -90,10 +98,15 @@ class K8Resource:
     def triples_self(self):
         yield self.uri, RDF.type, NS_K8S[self.kind]
         yield self.uri, NS_K8S.hasNamespace, self.ns
+        yield self.ns, NS_K8S.hasChild, self.uri
         yield self.uri, RDFS.label, Literal(self.label)
 
         for k, v in self.metadata.get("labels", {}).items():
             yield self.uri, RDFS.label, Literal(f"{k}: {v}")
+        if self.app:
+            yield self.ns, NS_K8S.hasChild, self.app
+            yield self.app, RDF.type, NS_K8S.Application
+            yield self.app, NS_K8S.hasChild, self.uri
 
     def triple_spec(self):
         yield from []
@@ -185,14 +198,35 @@ class DC(K8Resource):
     def triple_spec(self):
         if not (template := self.spec.get("template")):
             return
-        if not (containers := template.get("spec", {}).get("containers")):
-            return
+        containers = template.get("spec", {}).get("containers", [])
+        volumes = template.get("spec", {}).get("volumes", [])
         template_labels = template.get("metadata", {}).get("labels", {})
+        for volume in volumes:
+            if "persistentVolumeClaim" in volume:
+                pvc = volume["persistentVolumeClaim"]["claimName"]
+                s_volume = self.ns + f"/PersistentVolumeClaim/{pvc}"
+                yield self.uri, NS_K8S.hasVolume, s_volume
+                yield self.uri, NS_K8S.accesses, s_volume
+                yield s_volume, RDF.type, NS_K8S.PersistentVolumeClaim
+                # XXX: the volume can be mounted in multiple applications.
+                if self.app:
+                    yield self.app, NS_K8S.hasChild, s_volume
+            else:
+                # """
+                # TODO: {'name': 'console-serving-cert',
+                #  'secret': {'defaultMode': 420, 'secretName': 'console-serving-cert'}}
+                #
+                # """
+                raise NotImplementedError
+
         for container in containers:
             s_container = self.ns + f'/container/{container["name"]}'
             yield self.uri, NS_K8S.executes, s_container
             yield s_container, RDF.type, NS_K8S.Container
             yield s_container, RDFS.label, Literal(container["name"])
+            yield self.uri, NS_K8S.hasChild, s_container
+            if self.app:
+                yield self.app, NS_K8S.hasChild, s_container
 
             if "image" in container:
                 yield s_container, NS_K8S.hasImage, URIRef(container["image"])
@@ -225,10 +259,9 @@ class DC(K8Resource):
                     pass
 
 
-def parse_resource(manifest: dict) -> K8Resource:
+def parse_resource(manifest: dict, ns=None) -> K8Resource:
     """Parse an openshift manifest file
     and convert it to an RDF resource
     """
-    resource = K8Resource.factory(manifest)
-
+    resource = K8Resource.factory(manifest, ns=ns)
     yield from resource.triples()

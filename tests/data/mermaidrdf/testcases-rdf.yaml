@@ -1,0 +1,155 @@
+testcases:
+  test_rdf_to_mermaid:
+    svc:
+      turtle: |-
+        @prefix k8s: <urn:k8s:> .
+        @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+        <urn:k8s:default/Service/async-api> a k8s:Service ;
+            rdfs:label "app: async-api",
+                "svc/async-api" ;
+            k8s:accesses <TCP://app=async-api:8080> ;
+            k8s:hasHost <TCP://async-api:8080> ;
+            k8s:hasNamespace k8s:default ;
+            k8s:hasPort <urn:k8s:default/Service/async-api:8080> ;
+            k8s:port "8080-TCP>8080" .
+
+        <TCP://async-api:8080> a k8s:Host .
+
+        k8s:default a k8s:Namespace ;
+            rdfs:label "default" .
+
+        <urn:k8s:default/Service/async-api:8080> a k8s:Host .
+      expected: [
+        'graph',
+        'urn:k8s:default["⬚ urn:k8s:default "]',
+        'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp: "))',
+        'urn:k8s:default_Service_async-api --> |accesses| TCP:__app=async-api:8080'
+        ]
+    ns:
+      turtle: |-
+
+        @prefix k8s: <urn:k8s:> .
+        @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+        k8s:default a k8s:Namespace ;
+            rdfs:label "default" .
+        k8s:default a k8s:Namespace ;
+          rdfs:label "default" ;
+          k8s:hasChild <urn:k8s:default/Application/messaging-api>,
+              <urn:k8s:default/Application/async-api>,
+              <urn:k8s:default/Application/rest-api>,
+              <urn:k8s:default/DeploymentConfig/messaging-api>,
+              <urn:k8s:default/DeploymentConfig/async-api>,
+              <urn:k8s:default/DeploymentConfig/rest-api>,
+              <urn:k8s:default/Service/messaging-api>,
+              <urn:k8s:default/Service/async-api>,
+              <urn:k8s:default/Service/rest-api> .
+
+        <urn:k8s:default/Service/async-api> a k8s:Service ;
+          rdfs:label "app: async-api",
+              "svc/async-api" ;
+          k8s:accesses <TCP://app=async-api:8080> ;
+          k8s:hasHost <TCP://async-api:8080> ;
+          k8s:hasNamespace k8s:default ;
+          k8s:hasPort <urn:k8s:default/Service/async-api:8080> ;
+          k8s:port "8080-TCP>8080" .
+
+        <urn:k8s:default/DeploymentConfig/messaging-api> a k8s:DeploymentConfig ;
+            rdfs:label "app: messaging-api",
+                "dc/messaging-api" ;
+            k8s:executes <urn:k8s:default/container/messaging-api> ;
+            k8s:hasChild <urn:k8s:default/container/messaging-api> ;
+            k8s:hasNamespace k8s:default .
+
+        <urn:k8s:default/DeploymentConfig/async-api> a k8s:DeploymentConfig ;
+            rdfs:label "app: async-api",
+                "dc/async-api" ;
+            k8s:executes <urn:k8s:default/container/async-api> ;
+            k8s:hasChild <urn:k8s:default/container/async-api> ;
+            k8s:hasNamespace k8s:default .
+
+        <urn:k8s:default/DeploymentConfig/rest-api> a k8s:DeploymentConfig ;
+            rdfs:label "app: rest-api",
+                "dc/rest-api" ;
+            k8s:executes <urn:k8s:default/container/rest-api> ;
+            k8s:hasChild <urn:k8s:default/container/rest-api> ;
+            k8s:hasNamespace k8s:default .
+
+
+        <urn:k8s:default/Application/messaging-api> a k8s:Application ;
+            k8s:hasChild <urn:k8s:default/DeploymentConfig/messaging-api>,
+                <urn:k8s:default/Service/messaging-api> .
+
+        <urn:k8s:default/Application/async-api> a k8s:Application ;
+            k8s:hasChild <urn:k8s:default/DeploymentConfig/async-api>,
+                <urn:k8s:default/Service/async-api> .
+
+        <urn:k8s:default/Application/rest-api> a k8s:Application ;
+            k8s:hasChild <urn:k8s:default/DeploymentConfig/rest-api>,
+                <urn:k8s:default/Service/rest-api> .
+      expected:
+      - graph
+      - 'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp: "))'
+      - urn:k8s:default_Service_async-api --> |accesses| TCP:__app=async-api:8080
+      - "urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
+      - "urn:k8s:default_DeploymentConfig_rest-api[\"\u27F3 rest-api app: \"]"
+      - urn:k8s:default_DeploymentConfig_rest-api --> |executes| urn:k8s:default_container_rest-api
+      - "urn:k8s:default_DeploymentConfig_messaging-api[\"\u27F3 messaging-api app: \\n\"\
+        ]"
+      - urn:k8s:default_DeploymentConfig_messaging-api --> |executes| urn:k8s:default_container_messaging-api
+      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app: \"]"
+      - urn:k8s:default_DeploymentConfig_async-api --> |executes| urn:k8s:default_container_async-api
+      - subgraph urn:k8s:default_Application_async-api["fa:fa-cubes async-api \n"]
+      - '  urn:k8s:default_DeploymentConfig_async-api'
+      - '  urn:k8s:default_Service_async-api'
+      - end
+      - subgraph urn:k8s:default_Application_rest-api["fa:fa-cubes rest-api \n"]
+      - '  urn:k8s:default_DeploymentConfig_rest-api'
+      - '  urn:k8s:default_Service_rest-api'
+      - end
+      - "subgraph urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
+      - '  urn:k8s:default_Application_messaging-api'
+      - '  urn:k8s:default_Application_async-api'
+      - '  urn:k8s:default_Application_rest-api'
+      - end
+      - subgraph urn:k8s:default_Application_messaging-api["fa:fa-cubes messaging-api \n"]
+      - '  urn:k8s:default_Service_messaging-api'
+      - '  urn:k8s:default_DeploymentConfig_messaging-api'
+      - end
+    dc:
+      turtle: |-
+        @prefix k8s: <urn:k8s:> .
+        @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+        <urn:k8s:default/DeploymentConfig/async-api> a k8s:DeploymentConfig ;
+            rdfs:label "app: async-api",
+                "dc/async-api" ;
+            k8s:executes <urn:k8s:default/container/async-api> ;
+            k8s:hasNamespace k8s:default .
+
+        <TCP://app=async-api:8080> a k8s:Port .
+
+        <TCP://deploymentconfig=async-api:8080> a k8s:Port .
+
+        <image-registry.openshift-image-registry.svc:5000/kafka-2/async-api@fafafa> a k8s:Image .
+
+        k8s:default a k8s:Namespace ;
+            rdfs:label "default" .
+
+        <urn:k8s:default/container/async-api> a k8s:Container ;
+            rdfs:label "async-api" ;
+            k8s:exposes <TCP://app=async-api:8080>,
+                <TCP://deploymentconfig=async-api:8080> ;
+            k8s:hasImage <ghcr.io/ioggstream/image:latest> .
+      expected:
+      - graph
+      - TCP:__deploymentconfig=async-api:8080["fa:fa-ethernet deploymentconfig=async-api:8080
+        \n"]
+      - TCP:__app=async-api:8080["fa:fa-ethernet app=async-api:8080 \n"]
+      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app: \"]"
+      - urn:k8s:default_DeploymentConfig_async-api --> |executes| urn:k8s:default_container_async-api
+      - "urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
+      - urn:k8s:default_container_async-api[["fa:fa-cube async-api \n"]]
+      - urn:k8s:default_container_async-api --> |exposes| TCP:__app=async-api:8080
+      - urn:k8s:default_container_async-api --> |exposes| TCP:__deploymentconfig=async-api:8080

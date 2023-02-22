@@ -1,0 +1,42 @@
+testcases:
+  test_service:
+    service:
+      manifest: |-
+        apiVersion: v1
+        kind: Service
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: myapp
+          name: myapp
+          selfLink: /api/v1/namespaces/my-ns/services/myapp
+        spec:
+          externalTrafficPolicy: Cluster
+          ports:
+          - port: 8081
+            protocol: TCP
+            targetPort: 8081
+          selector:
+            app: myapp
+            deploymentconfig: myapp
+          sessionAffinity: None
+          type: NodePort
+      expected:
+        [
+          ["urn:k8s:default/Service/myapp", "urn:k8s:port", "8081-TCP>8081"],
+          [
+            "TCP://myapp:8081",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Host",
+          ],
+          [
+            "urn:k8s:default",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Namespace",
+          ],
+          [
+            "urn:k8s:default/Application/myapp",
+            "urn:k8s:hasChild",
+            "urn:k8s:default/Service/myapp",
+          ],
+        ]

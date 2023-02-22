@@ -4,7 +4,27 @@ import pytest
 import yaml
 from rdflib import Graph, URIRef
 
-from kuberdf import DC, Service, parse_manifests, parse_resource
+from kuberdf import (
+    DC,
+    Service,
+    parse_manifest_as_graph,
+    parse_manifests,
+    parse_resource,
+)
+
+TESTCASES = yaml.safe_load(
+    (Path(__file__).parent / "data" / "kuberdf" / "testcases-kube.yaml").read_text()
+)["testcases"]
+
+
+@pytest.mark.parametrize("test_name,test_data", TESTCASES["test_service"].items())
+def test_service(test_name, test_data):
+    manifest = test_data["manifest"]
+    expected = set(tuple(x) for x in test_data["expected"])
+    g = parse_manifest_as_graph(manifest)
+    triples = g.triples((None, None, None))
+    actual = [tuple(map(str, x)) for x in triples]
+    assert expected < set(actual)
 
 
 @pytest.mark.parametrize("manifest_yaml", Path(".").glob("**/kuberdf/*.yaml"))
@@ -31,6 +51,8 @@ def test_parse_service_2():
         metadata:
             name: mysql-dev-external-service
             namespace: ndc-dev
+            labels:
+              app: myapp
         spec:
             ports:
               - protocol: TCP
@@ -50,6 +72,7 @@ def test_parse_service_2():
         URIRef("urn:k8s:accesses"),
         URIRef("urn:k8s:default/Endpoints/mysql-dev-external-service"),
     ) in triples
+    assert URIRef("urn:k8s:ndc-dev/Application/myapp") in {s for s, p, o in triples}
 
 
 def test_parse_service():

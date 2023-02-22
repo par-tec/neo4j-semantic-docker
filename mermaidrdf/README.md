@@ -115,13 +115,16 @@ fa:fa-globe
 fa:fa-language
 fa:fa-eyes
 fa:fa-rocket
+fa:fa-network-wired svc
+fa:fa-cube pod
 fa:fa-gear
 fa:fa-ban
-fa:fa-cube
+fa:fa-square
 fa:fa-cubes
 fa:fa-bug
 fa:fa-square-full
 fa:fa-hexagon
+fa:fa-database
 # KO
 firewall fa:fa-block-brick
 firewall fa:fa-block-brick-fire

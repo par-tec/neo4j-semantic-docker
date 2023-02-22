@@ -19,7 +19,7 @@ CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
 ASSERT r.uri IS UNIQUE;
 
 // Import d3fend.
-// CALL n10s.rdf.import.fetch("https://d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");
+// CALL n10s.rdf.import.fetch("https://next.d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");
 
 // Import infrastructure.
 // CALL n10s.rdf.import.fetch("https://gist.githubusercontent.com/ioggstream/c3f1394ebf23f27aa0a9771ad1bc06f9/raw/deleteme.ttl", "Turtle");

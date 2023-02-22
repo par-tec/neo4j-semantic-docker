@@ -34,6 +34,7 @@ k8s:Namespace   a rdfs:Class; rdfs:subClassOf k8s:Kind .
 k8s:Port        a rdfs:Class; rdfs:subClassOf k8s:Kind .
 k8s:Route       a rdfs:Class; rdfs:subClassOf k8s:Kind .
 k8s:Service     a rdfs:Class; rdfs:subClassOf k8s:Kind .
+k8s:PersistentVolumeClaim     a rdfs:Class; rdfs:subClassOf k8s:Kind .
 
 # Mappings
 k8s:Image rdfs:subClassOf d3f:ContainerImage .
@@ -45,3 +46,4 @@ k8s:Port rdfs:subClassOf d3f:NetworkService .
 k8s:Service rdfs:subClassOf d3f:NetworkService .
 k8s:ConfigMap rdfs:subClassOf d3f:ConfigurationResource .
 k8s:Endpoints rdfs:subClassOf d3f:NetworkNode .
+k8s:PersistentVolumeClaim rdfs:subClassOf d3f:Storage .

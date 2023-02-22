@@ -91,11 +91,12 @@ SMTP --o Authorization
   <ul class="nav nav-tabs bg-primary" id="myTab" role="tablist">
     <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Mermaid</a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">ATT&CK</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab7-tab" data-bs-toggle="tab" href="#tab7" role="tab" aria-controls="tab7" aria-selected="false">D3FEND</a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">RDF graph</i></a></li>
     <li class="nav-item"><a class="nav-link text-white" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Console</i></a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab5-tab" data-bs-toggle="tab" href="#tab5" role="tab" aria-controls="tab5" aria-selected="false">Help</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab6-tab" data-bs-toggle="tab" href="#tab6" role="tab" aria-controls="tab6" aria-selected="false"><i class="fab fa-github"></i></a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab7-tab" data-bs-toggle="tab" href="#tab7" role="tab" aria-controls="tab7" aria-selected="false">D3FEND</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab8-tab" data-bs-toggle="tab" href="#tab8" role="tab" aria-controls="tab8" aria-selected="false">Kubernetes</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab50-tab" data-bs-toggle="tab" href="#tab50" role="tab" aria-controls="tab50" aria-selected="false">Help</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab100-tab" data-bs-toggle="tab" href="#tab100" role="tab" aria-controls="tab100" aria-selected="false"><i class="fab fa-github"></i></a></li>
   </ul>
   <div class="tab-content" id="myTabContent">
 
@@ -110,11 +111,6 @@ SMTP --o Authorization
       <div id="attack-summary">att&ck summary placeholder </div>
     </div>
 
-    <div class="tab-pane p-4 fade" id="tab7" role="tabpanel" aria-labelledby="tab7-tab">
-      <p>D3FEND Summary with artifacts and defeses.</p>
-      <p><button class="fas fa-copy float-end" id="d3fend-summary-copy"></button> </p>
-      <div id="d3fend-summary">d3f summary placeholder </div>
-    </div>
 
 
     <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
@@ -143,7 +139,7 @@ list(nodes)
         <div id="replOutput"></div>
     </div>
 
-    <div class="tab-pane p-4 fade" id="tab5" role="tabpanel" aria-labelledby="tab5-tab">
+    <div class="tab-pane p-4 fade" id="tab50" role="tabpanel" aria-labelledby="tab50-tab">
         <h4>Intro</h4>
         <p>This tool shows how to use the D3FEND ontology to support the design and review of IT architectures.
 
@@ -178,8 +174,7 @@ list(nodes)
         </p>
 
     </div>
-
-    <div class="tab-pane p-4 fade" id="tab6" role="tabpanel" aria-labelledby="tab6-tab">
+    <div class="tab-pane p-4 fade" id="tab100" role="tabpanel" aria-labelledby="tab100-tab">
         <h4>Open Source</h4>
         <p>This tool is Open Source, contributions are welcome.
         <ul>
@@ -187,6 +182,90 @@ list(nodes)
         </p>
         </ul>
     </div>
+    <div class="tab-pane p-4 fade" id="tab7" role="tabpanel" aria-labelledby="tab7-tab">
+      <p>D3FEND Summary with artifacts and defeses.</p>
+      <p><button class="fas fa-copy float-end" id="d3fend-summary-copy"></button> </p>
+      <div id="d3fend-summary">d3f summary placeholder </div>
+    </div>
+    <div class="tab-pane p-4 fade" id="tab8" role="tabpanel" aria-labelledby="tab8-tab">
+        <h4>kubernetes</h4>
+        <p>Here you can paste your kubernetes manifest file and generate mermaid graphs out of them.
+          <b>Importing a Kubernetes manifest file will only generate a nice mermaid diagram. It is useful for documentation purposes but not for security assessment.</b>
+          <button class="float-end" id="kubernetes-reload">import manifests</button>
+        </p>
+
+        <textarea id="kubernetes" style="width: 100%; height: 100%;">
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: console-demo-plugin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-demo-plugin
+  namespace: console-demo-plugin
+  labels:
+    app: console-demo-plugin
+    app.kubernetes.io/component: console-demo-plugin
+    app.kubernetes.io/instance: console-demo-plugin
+    app.kubernetes.io/part-of: console-demo-plugin
+    app.openshift.io/runtime-namespace: console-demo-plugin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console-demo-plugin
+  template:
+    metadata:
+      labels:
+        app: console-demo-plugin
+    spec:
+      containers:
+        - name: console-demo-plugin
+          image: quay.io/jcaianirh/console-demo-plugin
+          ports:
+            - containerPort: 9001
+              protocol: TCP
+          imagePullPolicy: Always
+          args:
+            - '--ssl'
+            - '--cert=/var/serving-cert/tls.crt'
+            - '--key=/var/serving-cert/tls.key'
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: console-serving-cert
+  name: console-demo-plugin
+  namespace: console-demo-plugin
+  labels:
+    app: console-demo-plugin
+    app.kubernetes.io/component: console-demo-plugin
+    app.kubernetes.io/instance: console-demo-plugin
+    app.kubernetes.io/part-of: console-demo-plugin
+spec:
+  ports:
+    - name: 9001-tcp
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+  selector:
+    app: console-demo-plugin
+  type: ClusterIP
+  sessionAffinity: None
+
+        </textarea>
+    </div>
+
   </div><!-- tab-content -->
 
 </div><!-- row -->
@@ -218,6 +297,8 @@ mermaidAPI = mermaid.default.mermaidAPI
 g = app.initialize_graph(["ontology.ttl","d3fend-short.ttl"])
 g1 = None
 text0 = None
+text_mmd = ""
+
 
 def on_apply(event):
   """Create the RDF graph from mermaid text,
@@ -252,12 +333,47 @@ def on_apply(event):
 
 def render_mmd(event):
   """Render the `mermaid-graph` with `mermaid`.text"""
+  global text_mmd, g, g1
   log.warning(f"event {event}")
   text = Element("mermaid").value
-  text_mmd = app.markdown_to_mermaid(text) if app.guess_content(text) == "markdown" else text
-  log.warning(f"mermaid text: {text_mmd}")
-  mmd = mermaidAPI.render('buz', text_mmd)
-  js.document.getElementById("mermaid-graph").innerHTML = mmd
+  try:
+    content_type = app.guess_content(text)
+    if content_type == "markdown":
+      log.warning("Markdown detected.")
+      text_mmd = app.markdown_to_mermaid(text)
+    elif content_type == "mermaid":
+      log.warning("Mermaid detected.")
+      text_mmd = text
+    else:
+      log.warning("Unknown content.")
+      text_mmd = text
+    log.warning(f"mermaid text: {text_mmd}")
+    mmd = mermaidAPI.render('buz', text_mmd)
+    js.document.getElementById("mermaid-graph").innerHTML = mmd
+  except Exception as e:
+    log.exception(f"Error in mermaid: {e}")
+
+
+def kube_to_mmd(event):
+  log.warning(f"event {event}")
+  text = Element("kubernetes").value
+  content_type = app.guess_content(text)
+  if content_type != "kubernetes":
+    log.warning("Not a Kubernetes Manifest File.")
+    return
+  # Always re-create the RDF graph.
+  log.warning("No RDF graph, creating one..")
+  t0 = time()
+  graph_ttl = app.content_to_rdf(text)
+  Element("turtle-graph").write(graph_ttl)
+  log.warning("Created RDF graph in %d.." % (time()-t0,))
+  g_kube = rdflib.Graph()
+  g_kube.parse(data=graph_ttl, format="turtle")
+  text_mmd = app.rdf_to_mermaid(g_kube)
+
+  # Update the mermaid textarea
+  Element("mermaid").element.innerHTML = text_mmd.replace("urn:k8s:", "")
+  render_mmd(None)
 
 
 def _copy_to_clipboard_with_js(id_):
@@ -287,10 +403,23 @@ if not initialized:
     if not tab:
       continue
     tab.addEventListener("click", create_proxy(on_apply))
-  js.document.getElementById("mermaid").addEventListener("input", create_proxy(render_mmd))
-  js.document.getElementById("attack-summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("attack-summary")))
-  js.document.getElementById("d3fend-summary-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("d3fend-summary")))
-  js.document.getElementById("turtle-graph-copy").addEventListener("click", create_proxy(lambda event: _copy_to_clipboard_with_js("turtle-graph")))
+  js.document.getElementById("mermaid").addEventListener(
+    "input", create_proxy(render_mmd)
+  )
+  js.document.getElementById("kubernetes-reload").addEventListener(
+    "click", create_proxy(kube_to_mmd)
+  )
+  # Copy to clipboard.
+  js.document.getElementById("attack-summary-copy").addEventListener(
+    "click", create_proxy(lambda event: _copy_to_clipboard_with_js("attack-summary"))
+    )
+  js.document.getElementById("d3fend-summary-copy").addEventListener(
+    "click", create_proxy(lambda event: _copy_to_clipboard_with_js("d3fend-summary"))
+  )
+  js.document.getElementById("turtle-graph-copy").addEventListener(
+    "click", create_proxy(lambda event: _copy_to_clipboard_with_js("turtle-graph"))
+  )
+
 
   initialized = True
     </py-script>

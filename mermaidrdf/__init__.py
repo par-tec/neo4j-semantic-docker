@@ -5,6 +5,9 @@ from pathlib import Path
 
 import yaml
 from rdflib import Graph, Namespace
+from rdflib.namespace import RDF, RDFS
+
+from kuberdf import NS_K8S
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -190,3 +193,149 @@ def _parse_relation(src, dst, predicate, relation):
 def extract_mermaid(text: str):
     re_mermaid = re.compile("```mermaid\n.*?\n```", re.DOTALL | re.MULTILINE)
     return [graph[10:-3].strip() for graph in re_mermaid.findall(text)]
+
+
+class MermaidRDF:
+    """Convert an RDF graph to a mermaid graph."""
+
+    ICON_MAP = {
+        "urn:k8s:Service": "fa:fa-network-wired",
+        "urn:k8s:Port": "fa:fa-ethernet",
+        "urn:k8s:Deployment": "fa:fa-cubes",
+        "urn:k8s:Pod": "fa:fa-cube",
+        "urn:k8s:Container": "fa:fa-cube",
+        "urn:k8s:DeploymentConfig": "⟳",
+        "urn:k8s:Namespace": "⬚",
+        "urn:k8s:Image": "fa:fa-docker",
+        "urn:k8s:Application": "fa:fa-cubes",
+        "urn:k8s:PersistentVolumeClaim": "fa:fa-database",
+    }
+    UNSUPPORTED_TYPES = (
+        NS_K8S.Application,
+        NS_K8S.Image,
+        NS_K8S.Host,
+    )
+
+    def __init__(self, g: Graph):
+        self.g = g
+        self.lines = []
+        self.subgraphs = {}
+
+    @staticmethod
+    def sanitize_uri(s):
+        """Sanitize a URI to be used as a node name in mermaid."""
+        return s.split("@", 1)[0].replace("/", "_").replace("@", "_")[:64]
+
+    @staticmethod
+    def sanitize_label(label):
+        """Sanitize a label to be used as a node name in mermaid."""
+        label = label.strip()
+        ret = ""
+        offset = 0
+        for token in label.split():
+            if token in ret:
+                continue
+            ret += token + " "
+            if len(ret) - offset > 20:
+                ret += r"\n"
+                offset += 20
+        return ret
+
+    def parse(self):
+        for s, p, o in self.g:
+            if p != RDF.type:
+                continue
+            type_ = o
+            # Skip non-k8s resources.
+            if not str(type_).startswith(("urn:k8s:", "d3f:")):
+                continue
+
+            log.debug("Processing %s", [s, p, o])
+            icon = MermaidRDF.ICON_MAP.get(str(type_), "") or type_
+            src = MermaidRDF.sanitize_uri(s)
+
+            label = self.g.value(s, RDFS.label) or ""
+            label_l = f"{icon} {Path(s).name} {label}"
+            label_l = MermaidRDF.sanitize_label(label_l)
+            label_l = f'"{label_l}"'
+            # Create a tree of subgraph based on the
+            # hasChild predicate.
+            for child in self.g.objects(s, NS_K8S.hasChild) or []:
+                child = MermaidRDF.sanitize_uri(child)
+                self.subgraphs.setdefault(
+                    src,
+                    {
+                        "children": [],
+                        "label": f"[{label_l}]",
+                        "type": type_,
+                    },
+                )["children"].append(child)
+
+            # Some resources should not be rendered as nodes
+            # Instead they are rendered as subgraphs.
+            if type_ not in MermaidRDF.UNSUPPORTED_TYPES:
+                if type_ == NS_K8S.Container:
+                    left_p, right_p = "[[", "]]"
+                elif type_ == NS_K8S.Service:
+                    left_p, right_p = "((", "))"
+                elif type_ in (NS_K8S.PersistentVolumeClaim, NS_K8S.Image):
+                    left_p, right_p = "[(", ")]"
+                else:
+                    left_p, right_p = "[", "]"
+                self.lines.append(
+                    f"""{src}{left_p}{label_l}{right_p}""".replace("\n", "")
+                )
+            else:
+                log.warning("Skipping %s", s)
+            for link in (
+                NS_K8S.executes,
+                NS_K8S.exposes,
+                NS_K8S.accesses,
+            ):
+                for dst in self.g.objects(s, link) or []:
+                    dst = MermaidRDF.sanitize_uri(dst)
+                    self.lines.append(f"""{src} --> |{str(link)[8:]}| {dst}""")
+
+    def render(self):
+        self.parse()
+        ret = "graph\n"
+        ret += "\n".join(self.lines)
+        ret += "\n"
+        ret += "\n".join(MermaidRDF.create_tree(self.subgraphs))
+        return ret
+
+    @staticmethod
+    def create_tree(tree):
+        """Create a tree of subgraphs according to mermaid syntax."""
+        rendered = set()
+        for parent, data in tree.items():
+            children = data.get("children", [])
+            label = data.get("label") or ""
+            parent_type = data.get("type")
+            children = set(children)
+            if not children:
+                continue
+            log.warning("Rendering %s", parent)
+            children_to_render = set()
+            for child in children:
+                if child in rendered:
+                    continue
+                if child == parent:
+                    continue
+                if parent_type == NS_K8S.Namespace:
+                    if "_Deployment_" in child:
+                        continue
+                    if "_DeploymentConfig_" in child:
+                        continue
+                    if "_Service_" in child:
+                        continue
+                if parent_type == NS_K8S.DeploymentConfig:
+                    continue
+                log.warning("Rendering %s", child)
+                children_to_render.add(f"  {child}")
+                rendered.add(child)
+            if not children_to_render:
+                continue
+            yield f"subgraph {parent}{label}"
+            yield from children_to_render
+            yield "end"
