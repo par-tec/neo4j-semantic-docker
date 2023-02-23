@@ -1,5 +1,6 @@
 import logging
 import re
+import unicodedata
 from time import time
 
 import pandas as pd
@@ -192,4 +193,14 @@ def render_row(row):
         _fix_url(relation),
         f"[{artifact_name}]({artifact_url})",
         f"[{technique_id} - {technique_label}]({technique_url})",
+    )
+
+
+def render_unicode_emojis(text):
+    re_emoji = re.compile("u:u-([a-zA-Z0-9_-]+)")
+    return re_emoji.sub(
+        lambda match: unicodedata.lookup(
+            match.group(1).upper().replace("_", " ").replace("-", " ")
+        ),
+        text,
     )

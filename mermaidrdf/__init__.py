@@ -201,10 +201,10 @@ class MermaidRDF:
     ICON_MAP = {
         "urn:k8s:Service": "fa:fa-network-wired",
         "urn:k8s:Port": "fa:fa-ethernet",
-        "urn:k8s:Deployment": "fa:fa-cubes",
+        "urn:k8s:Deployment": "⟳",
+        "urn:k8s:DeploymentConfig": "⟳",
         "urn:k8s:Pod": "fa:fa-cube",
         "urn:k8s:Container": "fa:fa-cube",
-        "urn:k8s:DeploymentConfig": "⟳",
         "urn:k8s:Namespace": "⬚",
         "urn:k8s:Image": "fa:fa-docker",
         "urn:k8s:Application": "fa:fa-cubes",

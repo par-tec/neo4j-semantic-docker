@@ -72,6 +72,10 @@ class K8Resource:
         clz = classmap.get(kind, K8Resource)
         return clz(manifest, ns=ns)
 
+    def get_app_uri(self, metadata):
+        app = metadata.get("labels", {}).get("app")
+        return URIRef(self.ns + f"/Application/{app}") if app else None
+
     def __init__(self, manifest=None, ns=None) -> None:
         self.kind = manifest["kind"]
         self.metadata = manifest["metadata"]
@@ -85,8 +89,7 @@ class K8Resource:
             self.uri = self.ns + f"/{self.kind}/{self.name}"
 
         # Set the application.
-        app = self.metadata.get("labels", {}).get("app")
-        self.app = URIRef(self.ns + f"/Application/{app}") if app else None
+        self.app = self.get_app_uri(self.metadata)
 
     def triples_kind(self):
         yield (NS_K8S[self.kind], RDF.type, NS_K8S.Kind)
@@ -200,7 +203,9 @@ class DC(K8Resource):
             return
         containers = template.get("spec", {}).get("containers", [])
         volumes = template.get("spec", {}).get("volumes", [])
-        template_labels = template.get("metadata", {}).get("labels", {})
+        metadata = template.get("metadata", {})
+        template_labels = metadata.get("labels", {})
+        template_app = self.get_app_uri(metadata) or self.app
         for volume in volumes:
             if "persistentVolumeClaim" in volume:
                 pvc = volume["persistentVolumeClaim"]["claimName"]
@@ -209,8 +214,8 @@ class DC(K8Resource):
                 yield self.uri, NS_K8S.accesses, s_volume
                 yield s_volume, RDF.type, NS_K8S.PersistentVolumeClaim
                 # XXX: the volume can be mounted in multiple applications.
-                if self.app:
-                    yield self.app, NS_K8S.hasChild, s_volume
+                if template_app:
+                    yield template_app, NS_K8S.hasChild, s_volume
             else:
                 # """
                 # TODO: {'name': 'console-serving-cert',
@@ -239,6 +244,8 @@ class DC(K8Resource):
                         port_u = URIRef(f"{protocol}://{k}={v}:{port['containerPort']}")
                         yield s_container, NS_K8S.exposes, port_u
                         yield port_u, RDF.type, NS_K8S.Port
+                        if template_app:
+                            yield template_app, NS_K8S.hasChild, port_u
 
             for env in container.get("env", []):
                 try:

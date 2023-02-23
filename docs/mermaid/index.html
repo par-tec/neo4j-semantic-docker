@@ -51,7 +51,6 @@
         text-align: center;
       }
     </style>
-
   </head>
   <body>
     <h1>Design & D3FEND
@@ -297,6 +296,9 @@ mermaidAPI = mermaid.default.mermaidAPI
 g = app.initialize_graph(["ontology.ttl","d3fend-short.ttl"])
 g1 = None
 text0 = None
+# Publish information in the global namespace
+#   to be accessible from the console.
+g_kube = None
 text_mmd = ""
 
 
@@ -348,13 +350,18 @@ def render_mmd(event):
       log.warning("Unknown content.")
       text_mmd = text
     log.warning(f"mermaid text: {text_mmd}")
+    text_mmd = app.render_unicode_emojis(text_mmd)
     mmd = mermaidAPI.render('buz', text_mmd)
     js.document.getElementById("mermaid-graph").innerHTML = mmd
   except Exception as e:
     log.exception(f"Error in mermaid: {e}")
 
+def resolve_unicode():
+  text_mmd = text_mmd.replace("u:u-gear", "\N{GEAR}")
+  raise NotImplementedError
 
 def kube_to_mmd(event):
+  global g_kube
   log.warning(f"event {event}")
   text = Element("kubernetes").value
   content_type = app.guess_content(text)

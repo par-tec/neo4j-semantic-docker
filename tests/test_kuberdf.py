@@ -4,13 +4,7 @@ import pytest
 import yaml
 from rdflib import Graph, URIRef
 
-from kuberdf import (
-    DC,
-    Service,
-    parse_manifest_as_graph,
-    parse_manifests,
-    parse_resource,
-)
+from kuberdf import DC, parse_manifest_as_graph, parse_manifests, parse_resource
 
 TESTCASES = yaml.safe_load(
     (Path(__file__).parent / "data" / "kuberdf" / "testcases-kube.yaml").read_text()
@@ -19,6 +13,15 @@ TESTCASES = yaml.safe_load(
 
 @pytest.mark.parametrize("test_name,test_data", TESTCASES["test_service"].items())
 def test_service(test_name, test_data):
+    harn_parse_manifests(test_name, test_data)
+
+
+@pytest.mark.parametrize("test_name,test_data", TESTCASES["test_dc"].items())
+def test_dc(test_name, test_data):
+    harn_parse_manifests(test_name, test_data)
+
+
+def harn_parse_manifests(test_name, test_data):
     manifest = test_data["manifest"]
     expected = set(tuple(x) for x in test_data["expected"])
     g = parse_manifest_as_graph(manifest)
@@ -41,73 +44,6 @@ def test_parse_resource(manifest_yaml):
             g.add(triple)
 
     assert g is not None
-
-
-def test_parse_service_2():
-    manifest = yaml.safe_load(
-        """
-        apiVersion: v1
-        kind: Service
-        metadata:
-            name: mysql-dev-external-service
-            namespace: ndc-dev
-            labels:
-              app: myapp
-        spec:
-            ports:
-              - protocol: TCP
-                port: 3306
-                targetPort: 3306
-        """
-    )
-    resource = Service(manifest)
-    assert resource.kind == "Service"
-    assert resource.name == "mysql-dev-external-service"
-    assert resource.namespace == "ndc-dev"
-    triples = list(resource.triples())
-
-    assert triples
-    assert (
-        URIRef("urn:k8s:ndc-dev/Service/mysql-dev-external-service"),
-        URIRef("urn:k8s:accesses"),
-        URIRef("urn:k8s:default/Endpoints/mysql-dev-external-service"),
-    ) in triples
-    assert URIRef("urn:k8s:ndc-dev/Application/myapp") in {s for s, p, o in triples}
-
-
-def test_parse_service():
-    manifest = yaml.safe_load(
-        """
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: hello-world
-      namespace: default
-    spec:
-      ports:
-      - name: http
-        port: 80
-        protocol: TCP
-        targetPort: 8080
-      selector:
-        app: hello-world
-      sessionAffinity: None
-      type: ClusterIP
-    status:
-      loadBalancer: {}
-    """
-    )
-    resource = Service(manifest)
-    assert resource.kind == "Service"
-    assert resource.name == "hello-world"
-    assert resource.namespace == "default"
-    triples = list(resource.triples())
-    assert triples
-    assert (
-        URIRef("urn:k8s:default/Service/hello-world"),
-        URIRef("urn:k8s:hasPort"),
-        URIRef("urn:k8s:default/Service/hello-world:80"),
-    ) in triples
 
 
 def test_parse_dc():

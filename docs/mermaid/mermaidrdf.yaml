@@ -311,6 +311,33 @@ SW_MAP:
   - rabbitmq
   - kafka
   - pulsar
+- artifacts:
+  - urn:k8s:Deployment
+  - urn:k8s:DeploymentConfig
+  labels:
+  - "⟳"
+- artifacts:
+  - urn:k8s:Pod
+  - urn:k8s:Container
+  labels:
+  - "⚙"
+  - "fa:fa-cube"
+- artifacts:
+  - urn:k8s:Service
+  labels:
+  - "fa:fa-network-wired"
+- artifacts:
+  - urn:k8s:PersistentVolumeClaim
+  labels:
+  - "fa:fa-database"
+- artifacts:
+  - urn:k8s:Namespace
+  labels:
+  - "⬚"
+- artifacts:
+  - urn:k8s:Port
+  labels:
+  - "fa:fa-ethernet"
 #
 # Infer further information to the graph, based on the relations
 #

@@ -40,3 +40,134 @@ testcases:
             "urn:k8s:default/Service/myapp",
           ],
         ]
+    service_has_app:
+      manifest: |-
+        apiVersion: v1
+        kind: Service
+        metadata:
+            name: mysql-dev-external-service
+            namespace: ndc-dev
+            labels:
+              app: myapp
+        spec:
+            ports:
+              - protocol: TCP
+                port: 3306
+                targetPort: 3306
+      expected:
+        - [
+            "urn:k8s:ndc-dev/Service/mysql-dev-external-service",
+            "urn:k8s:accesses",
+            "urn:k8s:default/Endpoints/mysql-dev-external-service",
+          ]
+        - [
+            "urn:k8s:ndc-dev/Application/myapp",
+            "urn:k8s:hasChild",
+            "urn:k8s:ndc-dev/Service/mysql-dev-external-service",
+          ]
+        - [
+            "urn:k8s:ndc-dev/Service/mysql-dev-external-service",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Service",
+          ]
+    service__has_port:
+      manifest: |-
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: hello-world
+          namespace: default
+        spec:
+          ports:
+          - name: http
+            port: 80
+            protocol: TCP
+            targetPort: 8080
+          selector:
+            app: hello-world
+          sessionAffinity: None
+          type: ClusterIP
+        status:
+          loadBalancer: {}
+      expected:
+        - [
+            "urn:k8s:default/Service/hello-world",
+            "urn:k8s:hasPort",
+            "urn:k8s:default/Service/hello-world:80",
+          ]
+  test_dc:
+    dc_base:
+      manifest: &dc_base_manifest |-
+        apiVersion: apps.openshift.io/v1
+        kind: DeploymentConfig
+        metadata:
+          name: hello-world
+          namespace: default
+        spec:
+          replicas: 1
+          selector:
+            app: hello-world
+          template:
+            metadata:
+              labels:
+                app: hello-world
+            spec:
+              containers:
+              - image: quay.io/openshiftlabs/hello-world
+                imagePullPolicy: Always
+                name: hello-world
+                ports:
+                - containerPort: 8080
+                  protocol: TCP
+                resources: {}
+                terminationMessagePath: /dev/termination-log
+                terminationMessagePolicy: File
+              dnsPolicy: ClusterFirst
+              restartPolicy: Always
+              schedulerName: default-scheduler
+              securityContext: {}
+              terminationGracePeriodSeconds: 30
+        status: {}
+      expected:
+        - [
+            "urn:k8s:default/DeploymentConfig/hello-world",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:DeploymentConfig",
+          ]
+        - [
+            "quay.io/openshiftlabs/hello-world",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Image",
+          ]
+        - [
+            "urn:k8s:default/container/hello-world",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Container",
+          ]
+
+    dc_has_children:
+      manifest: *dc_base_manifest
+      expected:
+        - [
+            "urn:k8s:default/DeploymentConfig/hello-world",
+            "urn:k8s:hasChild",
+            "urn:k8s:default/container/hello-world",
+          ]
+        - [
+            "urn:k8s:default/Application/hello-world",
+            "urn:k8s:hasChild",
+            "TCP://app=hello-world:8080",
+          ]
+    dc_exposes_and_executes:
+      manifest: *dc_base_manifest
+      expected:
+        - [
+            "urn:k8s:default/container/hello-world",
+            "urn:k8s:exposes",
+            "TCP://app=hello-world:8080",
+          ]
+        - [
+            "urn:k8s:default/DeploymentConfig/hello-world",
+            "urn:k8s:executes",
+            "urn:k8s:default/container/hello-world",
+          ]
