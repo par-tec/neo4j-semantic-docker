@@ -99,3 +99,19 @@ spec:
           namespace: openshift-monitoring
           port: 9091
         type: Service
+---
+kind: Route
+metadata:
+  labels:
+    app: console-demo-plugin
+  name: console-demo-plugin
+  namespace: console-demo-plugin
+spec:
+  host: web-ui-webcoll.apps.okd.local
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: console-demo-plugin
+    weight: 100
+  wildcardPolicy: None

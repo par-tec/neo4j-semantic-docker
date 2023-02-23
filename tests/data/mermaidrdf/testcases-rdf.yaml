@@ -1,4 +1,17 @@
 testcases:
+  test_rdf_to_mermaid_contains:
+    registry:
+      turtle: |-
+        @prefix k8s: <urn:k8s:> .
+        @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+        <docker.io> a k8s:Registry ;
+            k8s:hasChild <https://docker.io/openshift/nginx-modsec>,
+                <https://docker.io/ioggstream/python>.
+
+        <https://docker.io/ioggstream/python> a k8s:Image .
+      contains:
+        - 'https:__docker.io_ioggstream_python[("fa:fa-docker python")]'
   test_rdf_to_mermaid:
     svc:
       turtle: |-
@@ -20,12 +33,11 @@ testcases:
             rdfs:label "default" .
 
         <urn:k8s:default/Service/async-api:8080> a k8s:Host .
-      expected: [
-        'graph',
-        'urn:k8s:default["⬚ urn:k8s:default "]',
-        'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp: "))',
-        'urn:k8s:default_Service_async-api --> |accesses| TCP:__app=async-api:8080'
-        ]
+      expected:
+      # Namespaces are not rendered as nodes.
+      - 'graph'
+      - 'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp:"))'
+      - 'urn:k8s:default_Service_async-api --> |accesses| TCP:__app=async-api:8080'
     ns:
       turtle: |-
 
@@ -90,30 +102,30 @@ testcases:
                 <urn:k8s:default/Service/rest-api> .
       expected:
       - graph
-      - 'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp: "))'
+      - 'urn:k8s:default_Service_async-api(("fa:fa-network-wired async-api \napp:"))'
       - urn:k8s:default_Service_async-api --> |accesses| TCP:__app=async-api:8080
-      - "urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
-      - "urn:k8s:default_DeploymentConfig_rest-api[\"\u27F3 rest-api app: \"]"
+      - "urn:k8s:default_DeploymentConfig_rest-api[\"\u27F3 rest-api app:\"]"
       - urn:k8s:default_DeploymentConfig_rest-api --> |executes| urn:k8s:default_container_rest-api
-      - "urn:k8s:default_DeploymentConfig_messaging-api[\"\u27F3 messaging-api app: \\n\"\
+      - "urn:k8s:default_DeploymentConfig_messaging-api[\"\u27F3 messaging-api app:\"\
         ]"
       - urn:k8s:default_DeploymentConfig_messaging-api --> |executes| urn:k8s:default_container_messaging-api
-      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app: \"]"
+      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app:\"]"
       - urn:k8s:default_DeploymentConfig_async-api --> |executes| urn:k8s:default_container_async-api
-      - subgraph urn:k8s:default_Application_async-api["fa:fa-cubes async-api \n"]
+      # Subgraphs.
+      - subgraph urn:k8s:default_Application_async-api["fa:fa-cubes async-api"]
       - '  urn:k8s:default_DeploymentConfig_async-api'
       - '  urn:k8s:default_Service_async-api'
       - end
-      - subgraph urn:k8s:default_Application_rest-api["fa:fa-cubes rest-api \n"]
+      - subgraph urn:k8s:default_Application_rest-api["fa:fa-cubes rest-api"]
       - '  urn:k8s:default_DeploymentConfig_rest-api'
       - '  urn:k8s:default_Service_rest-api'
       - end
-      - "subgraph urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
+      - "subgraph urn:k8s:default[\"\u2B1A urn:k8s:default\"]"
       - '  urn:k8s:default_Application_messaging-api'
       - '  urn:k8s:default_Application_async-api'
       - '  urn:k8s:default_Application_rest-api'
       - end
-      - subgraph urn:k8s:default_Application_messaging-api["fa:fa-cubes messaging-api \n"]
+      - subgraph urn:k8s:default_Application_messaging-api["fa:fa-cubes messaging-api"]
       - '  urn:k8s:default_Service_messaging-api'
       - '  urn:k8s:default_DeploymentConfig_messaging-api'
       - end
@@ -132,7 +144,7 @@ testcases:
 
         <TCP://deploymentconfig=async-api:8080> a k8s:Port .
 
-        <image-registry.openshift-image-registry.svc:5000/kafka-2/async-api@fafafa> a k8s:Image .
+        <https://docker.io/kafka-2/async-api@fafafa> a k8s:Image .
 
         k8s:default a k8s:Namespace ;
             rdfs:label "default" .
@@ -144,12 +156,11 @@ testcases:
             k8s:hasImage <ghcr.io/ioggstream/image:latest> .
       expected:
       - graph
-      - TCP:__deploymentconfig=async-api:8080["fa:fa-ethernet deploymentconfig=async-api:8080
-        \n"]
-      - TCP:__app=async-api:8080["fa:fa-ethernet app=async-api:8080 \n"]
-      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app: \"]"
+      - TCP:__deploymentconfig=async-api:8080["fa:fa-ethernet deploymentconfig=async-api:8080"]
+      - TCP:__app=async-api:8080["fa:fa-ethernet app=async-api:8080"]
+      - "urn:k8s:default_DeploymentConfig_async-api[\"\u27F3 async-api app:\"]"
+      - 'https:__docker.io_kafka-2_async-api[("fa:fa-docker async-api@fafafa")]'
       - urn:k8s:default_DeploymentConfig_async-api --> |executes| urn:k8s:default_container_async-api
-      - "urn:k8s:default[\"\u2B1A urn:k8s:default \"]"
-      - urn:k8s:default_container_async-api[["fa:fa-cube async-api \n"]]
+      - urn:k8s:default_container_async-api[["fa:fa-cube async-api"]]
       - urn:k8s:default_container_async-api --> |exposes| TCP:__app=async-api:8080
       - urn:k8s:default_container_async-api --> |exposes| TCP:__deploymentconfig=async-api:8080

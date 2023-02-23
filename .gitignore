@@ -131,3 +131,6 @@ dmypy.json
 dati-semantics-kubernetes
 deleteme.*
 DELETEME.*
+
+# Profiler files.
+prof/

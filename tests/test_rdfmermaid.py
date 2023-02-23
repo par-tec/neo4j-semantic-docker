@@ -38,3 +38,16 @@ def test_rdf_to_mermaid(test_name, test_data):
     mermaid = MermaidRDF(g)
     mermaid_text = mermaid.render().splitlines()
     assert set(mermaid_text) == set(expected)
+
+
+@pytest.mark.parametrize(
+    "test_name,test_data", TESTCASES["test_rdf_to_mermaid_contains"].items()
+)
+def test_rdf_to_mermaid_contains(test_name, test_data):
+    mermaid = test_data["turtle"]
+    contains = test_data["contains"]
+    g = Graph()
+    g.parse(data=mermaid, format="turtle")
+    mermaid = MermaidRDF(g)
+    mermaid_text = mermaid.render().splitlines()
+    assert set(mermaid_text) >= set(contains)

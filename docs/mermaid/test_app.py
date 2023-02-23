@@ -1,5 +1,8 @@
+import os
 import tempfile
+from pathlib import Path
 
+import app
 import pandas as pd
 from app import d3fend_summary, initialize_graph, markdown_link_to_html_link
 from rdflib import Graph
@@ -94,6 +97,40 @@ Client --> |fa:fa-envelope| WebMail
 ```
 
 """
+
+
+def test_flip():
+    import re
+
+    text_mmd = """
+graph LR
+a-->b
+
+subgraph b [antani sblindola]
+c --> d
+d --> e
+end
+
+"""
+    ret = re.sub(r"subgraph\s+(.*?)\n", r"subgraph \1\ndirection TD\n\n", text_mmd)
+
+    raise NotImplementedError
+
+
+def test_filter_mermaid():
+    markdown_text = Path(os.environ["MD_FILE"]).read_text()
+    ret = app.filter_mermaid(
+        markdown_text,
+        r"needle",
+    )
+    Path("/tmp/deleteme.md").write_text(
+        f"""
+```mermaid
+{ret}
+```
+"""
+    )
+    raise NotImplementedError
 
 
 def test_parse_markdown_to_mermaid():

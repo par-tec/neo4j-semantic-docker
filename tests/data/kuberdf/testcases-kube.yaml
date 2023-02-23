@@ -1,5 +1,133 @@
 testcases:
+  test_network:
+    route-base:
+      manifest: |-
+        apiVersion: route.openshift.io/v1
+        kind: Route
+        metadata:
+          annotations:
+            openshift.io/generated-by: OpenShiftNewApp
+            openshift.io/host.generated: "true"
+          labels:
+            app: web-ui
+            template: node-php
+          name: web-ui
+          namespace: webcoll
+        spec:
+          host: web-ui-webcoll.apps.okd.local
+          tls:
+            termination: edge
+          to:
+            kind: Service
+            name: web-ui
+            weight: 100
+          wildcardPolicy: None
+      expected:
+        - [
+            "urn:k8s:webcoll/Route/web-ui",
+            "urn:k8s:accesses",
+            "urn:k8s:webcoll/Service/web-ui",
+          ]
+        - [
+            "urn:k8s:webcoll/Route/web-ui",
+            "urn:k8s:hasHost",
+            "https://web-ui-webcoll.apps.okd.local:443",
+          ]
+        - [
+            "urn:k8s:webcoll/Application/web-ui",
+            "urn:k8s:hasChild",
+            "https://web-ui-webcoll.apps.okd.local:443",
+          ]
+  test_skip:
+    ocp-namespace:
+      manifest: |-
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: openshift-foo
+          namespace: openshift-foo
+      expected: []
+    replicationcontroller_ocp:
+      manifest: |-
+        apiVersion: v1
+        kind: ReplicationController
+        metadata:
+          name: myapp
+          namespace: default
+          annotations:
+            openshift.io/deployment-config.latest-version: "1"
+            openshift.io/deployment-config.name: myapp
+            openshift.io/deployment.name: myapp-1
+        spec: {}
+      expected: []
+    pods:
+      manifest: |-
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: myapp
+          namespace: default
+        spec:
+          containers:
+          - image: myapp
+            name: myapp
+            ports:
+            - containerPort: 8081
+              protocol: TCP
+      expected: []
+    jobs:
+      manifest: |-
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: my-cronjob-27700371
+          namespace: default
+        spec: {}
+      expected: []
+  test_list:
+    base:
+      manifest: |-
+        apiVersion: v1
+        kind: List
+        metadata:
+          resourceVersion: ""
+        items:
+        - apiVersion: v1
+          kind: Service
+          metadata:
+            labels:
+              app: myapp
+            name: myapp
+          spec:
+            externalTrafficPolicy: Cluster
+            ports:
+            - port: 8081
+              protocol: TCP
+              targetPort: 8081
+      expected:
+        - ["urn:k8s:default/Service/myapp", "urn:k8s:Port", "8081-TCP>8081"]
   test_service:
+    external_name:
+      manifest: |-
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: my-service
+          namespace: prod
+        spec:
+          type: ExternalName
+          externalName: my.database.example.com
+      expected:
+        - [
+            "urn:k8s:prod/Service/my-service",
+            "urn:k8s:hasHost",
+            "fixme://my.database.example.com",
+          ]
+        - [
+            "fixme://my.database.example.com",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "urn:k8s:Host",
+          ]
     service:
       manifest: |-
         apiVersion: v1
@@ -23,7 +151,7 @@ testcases:
           type: NodePort
       expected:
         [
-          ["urn:k8s:default/Service/myapp", "urn:k8s:port", "8081-TCP>8081"],
+          ["urn:k8s:default/Service/myapp", "urn:k8s:Port", "8081-TCP>8081"],
           [
             "TCP://myapp:8081",
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
@@ -135,12 +263,12 @@ testcases:
             "urn:k8s:DeploymentConfig",
           ]
         - [
-            "quay.io/openshiftlabs/hello-world",
+            "https://quay.io/openshiftlabs/hello-world",
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
             "urn:k8s:Image",
           ]
         - [
-            "urn:k8s:default/container/hello-world",
+            "urn:k8s:default/DeploymentConfig/hello-world/Container/hello-world",
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
             "urn:k8s:Container",
           ]
@@ -151,7 +279,7 @@ testcases:
         - [
             "urn:k8s:default/DeploymentConfig/hello-world",
             "urn:k8s:hasChild",
-            "urn:k8s:default/container/hello-world",
+            "urn:k8s:default/DeploymentConfig/hello-world/Container/hello-world",
           ]
         - [
             "urn:k8s:default/Application/hello-world",
@@ -162,12 +290,12 @@ testcases:
       manifest: *dc_base_manifest
       expected:
         - [
-            "urn:k8s:default/container/hello-world",
+            "urn:k8s:default/DeploymentConfig/hello-world/Container/hello-world",
             "urn:k8s:exposes",
             "TCP://app=hello-world:8080",
           ]
         - [
             "urn:k8s:default/DeploymentConfig/hello-world",
             "urn:k8s:executes",
-            "urn:k8s:default/container/hello-world",
+            "urn:k8s:default/DeploymentConfig/hello-world/Container/hello-world",
           ]

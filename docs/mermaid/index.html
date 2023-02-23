@@ -7,8 +7,8 @@
     packages = [
       "typing_extensions",
       "pyyaml",
+      "pandas",
       "rdflib",
-      "pandas"
     ]
     [[fetch]]
     files = [
@@ -20,6 +20,7 @@
       "./d3fend-short.ttl"]
     </py-config>
 
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <!-- Load mermaid library -->
     <script>
@@ -27,6 +28,18 @@
         (async() => {
           mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs');
         })();
+
+        function mermaid_enable_zoom(mermaid) {
+          document.getElementById("mermaid-diagram-svg").style = "";
+          var svg = d3.select(mermaid);
+          svg.html("<g>" + svg.html() + "</g>");
+          var inner = svg.select("g");
+          var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+          });
+          svg.call(zoom);
+        }
+
     </script>
 
     <!-- Styles & co
@@ -50,18 +63,52 @@
       .dataframe th {
         text-align: center;
       }
+      #mermaid-diagram-svg {
+        height: 70%;
+        vertical-align: top;
+      }
+      #mermaid-filter {
+        width: 30em;
+      }
+      .diagram-full {
+        height: 100%;
+        width: 2000px;
+      }
+      .diagram-normal {
+        height: 100%;
+        width: 100%;
+      }
     </style>
   </head>
   <body>
+    <div class="row" id="header" >
+
     <h1>Design & D3FEND
     <a href="https://github.com/par-tec/neo4j-semantic-docker" target="_blank" rel="noopener noreferrer"><i class="fab fa-github float-end"></i></a>
     </h1>
     <h2>An experimental webapp to support secure architectural design.</h2>
     <p>Design your IT architecture using a MermaidJS graph in the left editor. Then click on the "D3FEND" tab to see the possible attack paths. Explore the other features selecting the other tabs!</p>
+    <div class="form-check float-end">
+      <div class="toggles float-end">
+        <label for="toggle-kube-view">
+          Kube view
+          <input type="checkbox" id="toggle-kube-view">
+          <span class="lever"></span>
+        </label>
+      </div>
+    </div>
+</div>
 
-    <div class="row" style="height: 100%">
-      <div class="col-sm">
-          <textarea id="mermaid" style="width: 100%; height: 100%;">
+<div class="row" style="height: 100%">
+  <div class="col-sm" id="inputCol">
+    <ul class="nav nav-tabs bg-primary" id="inputTab" role="tablist">
+      <li class="nav-item"><a class="nav-link active" id="tab-input-mermaid-tab" data-bs-toggle="tab" href="#tab-input-mermaid" role="tab" aria-controls="tab-input-mermaid" aria-selected="true">Mermaid</a></li>
+      <li class="nav-item"><a class="nav-link" id="tab-input-kube-tab" data-bs-toggle="tab" href="#tab-input-kube" role="tab" aria-controls="tab-input-kube" aria-selected="false">Kube</a></li>
+    </ul>
+  <div class="tab-content" id="inputTabContent">
+
+    <div class="tab-pane p-4 fade show active" id="tab-input-mermaid" role="tabpanel" aria-labelledby="tab-input-mermaid-tab">
+      <textarea id="mermaid" style="width: 100%; height: 100%;">
 graph LR
 
 %% Design here your architecture using MermaidJS syntax.
@@ -84,116 +131,16 @@ IMAP --> Mailstore[Mailstore fa:fa-envelope fa:fa-folder]
 Authorization[d3f:AuthorizationService fa:fa-user-secret] --> |d3f:authenticates| Client
 IMAP --o Authorization
 SMTP --o Authorization
-          </textarea>
-      </div>
-<div class="col-sm">
-  <ul class="nav nav-tabs bg-primary" id="myTab" role="tablist">
-    <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Mermaid</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">ATT&CK</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">RDF graph</i></a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab4-tab" data-bs-toggle="tab" href="#tab4" role="tab" aria-controls="tab4" aria-selected="false">Console</i></a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab7-tab" data-bs-toggle="tab" href="#tab7" role="tab" aria-controls="tab7" aria-selected="false">D3FEND</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab8-tab" data-bs-toggle="tab" href="#tab8" role="tab" aria-controls="tab8" aria-selected="false">Kubernetes</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab50-tab" data-bs-toggle="tab" href="#tab50" role="tab" aria-controls="tab50" aria-selected="false">Help</a></li>
-    <li class="nav-item"><a class="nav-link text-white" id="tab100-tab" data-bs-toggle="tab" href="#tab100" role="tab" aria-controls="tab100" aria-selected="false"><i class="fab fa-github"></i></a></li>
-  </ul>
-  <div class="tab-content" id="myTabContent">
-
-
-    <div class="tab-pane p-4 fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
-      <p id="mermaid-graph"></p>
+      </textarea>
     </div>
 
-    <div class="tab-pane p-4 fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-      <p>ATT&CK Summary with artifacts and attacks.</p>
-      <p><button class="fas fa-copy float-end" id="attack-summary-copy"></button> </p>
-      <div id="attack-summary">att&ck summary placeholder </div>
-    </div>
-
-
-
-    <div class="tab-pane p-4 fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
-      <p>This is a description of your IT architecture in <a href="https://en.wikipedia.org/wiki/Resource_Description_Framework" target="_blank" rel="noopener noreferrer">RDF</a> format. Nodes are described using MITRE categories. </p>
-      <p><button class="fas fa-copy float-end" id="turtle-graph-copy"></button></p>
-      <pre class="result" id="turtle-graph" style="border-color: blue">graph placeholder</pre>
-    </div>
-
-    <div class="tab-pane p-4 fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
-        <p>This is a python console that you can use to inspect and query the semantic graphs `g` and `g1`.
-        Moreover, you can issue SPARQL queries using the `g.query()` method.
-        Currently it does only show the returned value of the last python line, so statements such as print(), while evaluated, are not shown.
-        </p>
-        <py-repl output="replOutput">
-d3f = dict(g1.namespaces())["d3f"]
-nodes = g.query("""
-    PREFIX d3f: <%s>
-    SELECT ?s
-    WHERE {
-        ?s rdfs:subClassOf+ d3f:DefensiveTechnique .
-    }
-    LIMIT 5
-""" % d3f)
-list(nodes)
-        </py-repl>
-        <div id="replOutput"></div>
-    </div>
-
-    <div class="tab-pane p-4 fade" id="tab50" role="tabpanel" aria-labelledby="tab50-tab">
-        <h4>Intro</h4>
-        <p>This tool shows how to use the D3FEND ontology to support the design and review of IT architectures.
-
-        <ul>
-        <li>The first step is to represent your components and their relationships in a mermaid graph.
-        <li>You can classify your components using font-awesome icons (see the <a href="https://fontawesome.com/icons?d=gallery">gallery</a>). For example the <code>fa:fa-envelope</code> icon is used to reference is an email.
-
-        <pre>Client -->|fa:fa-envelope| MTA</pre>
-
-        The application is capable to label major sofware applications (e.g. nginx, postfix, ...) and to map them to the corresponding D3FEND classes (e.g. <code>d3f:MailTransferAgent</code>).
-
-        You can also use the <code>fab:fa-react</code> icon to indicate that a component is a WebUI.
-
-        <li>Once you have created your mermaid graph, you can click on the D3FEND tab to see the corresponding D3FEND graph. The D3FEND graph is represented as a turtle file. You can copy and paste it in your favorite RDF editor (e.g. <a href="https://www.w3.org/RDF/Validator/">W3C RDF validator</a>).
-
-        <li>The "Summary" tabs shows a table with the main entities of the D3FEND graph and the attacks associated with the specific DigitalArtifacts. The table contains hyperlinks to the corresponding D3FEND classes and ATT&CK techniques.
-        </p>
-
-        <p><h4>Font-awesome reference</h4>
-        <ul>
-        <li>fa:fa-server - d3f:Server
-        <li>fa:fa-desktop - d3f:WebServerApplication
-        <li>fa:fa-envelope - d3f:Email
-        <li>fa:fa-user-secret - d3f:UserAccount
-        <li>fa:fa-globe - d3f:InternetNetworkTraffic
-        <li>fab:fa-react, fab:fa-angular, fab:fa-vuejs - d3f:WebServerApplication, d3f:GraphicalUserInterface
-        <li>fa:fa-folder - d3f:FileSystem
-        <li>fab:fa-docker - d3f:ContainerProcess
-        </ul>
-
-
-        </p>
-
-    </div>
-    <div class="tab-pane p-4 fade" id="tab100" role="tabpanel" aria-labelledby="tab100-tab">
-        <h4>Open Source</h4>
-        <p>This tool is Open Source, contributions are welcome.
-        <ul>
-        <li>Source code: <a href="https://github.com/par-tec/neo4j-semantic-docker" target="_blank" rel="noopener noreferrer">github.com/par-tec/neo4j-semantic-docker</a>
-        </p>
-        </ul>
-    </div>
-    <div class="tab-pane p-4 fade" id="tab7" role="tabpanel" aria-labelledby="tab7-tab">
-      <p>D3FEND Summary with artifacts and defeses.</p>
-      <p><button class="fas fa-copy float-end" id="d3fend-summary-copy"></button> </p>
-      <div id="d3fend-summary">d3f summary placeholder </div>
-    </div>
-    <div class="tab-pane p-4 fade" id="tab8" role="tabpanel" aria-labelledby="tab8-tab">
-        <h4>kubernetes</h4>
+    <div class="tab-pane p-4 fade" id="tab-input-kube" role="tabpanel" aria-labelledby="tab-input-kube-tab">
         <p>Here you can paste your kubernetes manifest file and generate mermaid graphs out of them.
           <b>Importing a Kubernetes manifest file will only generate a nice mermaid diagram. It is useful for documentation purposes but not for security assessment.</b>
           <button class="float-end" id="kubernetes-reload">import manifests</button>
         </p>
 
-        <textarea id="kubernetes" style="width: 100%; height: 100%;">
+        <textarea id="kubernetes" style="height: 100%;">
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -263,6 +210,121 @@ spec:
   sessionAffinity: None
 
         </textarea>
+    </div> <!-- tab-input-kube -->
+</div> <!-- tab-list -->
+</div> <!-- col-sm -->
+
+
+
+<div class="col-sm">
+  <ul class="nav nav-tabs bg-primary" id="myTab" role="tablist">
+    <li class="nav-item"><a class="nav-link active" id="tab1-tab" data-bs-toggle="tab" href="#tab1" role="tab" aria-controls="tab1" aria-selected="true">Diagram</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab-attack-tab" data-bs-toggle="tab" href="#tab-attack" role="tab" aria-controls="tab-attack" aria-selected="false">ATT&CK</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab-d3fend-tab" data-bs-toggle="tab" href="#tab-d3fend" role="tab" aria-controls="tab-d3fend" aria-selected="false">D3FEND</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab3-tab" data-bs-toggle="tab" href="#tab30" role="tab" aria-controls="tab30" aria-selected="false">RDF graph</i></a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab40-tab" data-bs-toggle="tab" href="#tab40" role="tab" aria-controls="tab40" aria-selected="false">Console</i></a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab50-tab" data-bs-toggle="tab" href="#tab50" role="tab" aria-controls="tab50" aria-selected="false">Help</a></li>
+    <li class="nav-item"><a class="nav-link text-white" id="tab100-tab" data-bs-toggle="tab" href="#tab100" role="tab" aria-controls="tab100" aria-selected="false"><i class="fab fa-github"></i></a></li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+
+    <div class="tab-pane p-4 fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+      <p>
+      <div class="input-group form-group">
+        <label for="mermaid-filter">Filter the mermaid graph with regexp</label>
+        <input type="text" class="form-control" id="mermaid-filter"/>
+
+        <div class="input-group-append">
+          <div class="form-check-inline">
+            <input id="mermaid-chk-flip" type="checkbox">
+            <label for="mermaid-chk-flip">Flip</label>
+          </div>
+          <button class="btn btn-primary" type="button" id="mermaid-btn-redraw">Ok</button>
+          <button id="mermaid-btn-fullscreen" class="btn btn-primary" type="button"><i class="fa fa-expand"></i>toggle</button></p>
+        </div>
+      </div>
+      <p id="mermaid-graph" class="diagram-normal"></p>
+    </div>
+
+    <div class="tab-pane p-4 fade" id="tab-attack" role="tabpanel" aria-labelledby="tab-attack-tab">
+      <p>ATT&CK Summary with artifacts and attacks.</p>
+      <p><button class="fas fa-copy float-end" id="attack-summary-copy"></button> </p>
+      <div id="attack-summary">att&ck summary placeholder </div>
+    </div>
+
+    <div class="tab-pane p-4 fade" id="tab30" role="tabpanel" aria-labelledby="tab30-tab">
+      <p>This is a description of your IT architecture in <a href="https://en.wikipedia.org/wiki/Resource_Description_Framework" target="_blank" rel="noopener noreferrer">RDF</a> format. Nodes are described using MITRE categories. </p>
+      <p><button class="fas fa-copy float-end" id="turtle-graph-copy"></button></p>
+      <pre class="result" id="turtle-graph" style="border-color: blue">graph placeholder</pre>
+    </div>
+
+    <div class="tab-pane p-4 fade" id="tab40" role="tabpanel" aria-labelledby="tab40-tab">
+        <p>This is a python console that you can use to inspect and query the semantic graphs `g` and `g1`.
+        Moreover, you can issue SPARQL queries using the `g.query()` method.
+        Currently it does only show the returned value of the last python line, so statements such as print(), while evaluated, are not shown.
+        </p>
+        <py-repl output="replOutput">
+d3f = dict(g1.namespaces())["d3f"]
+nodes = g.query("""
+    PREFIX d3f: <%s>
+    SELECT ?s
+    WHERE {
+        ?s rdfs:subClassOf+ d3f:DefensiveTechnique .
+    }
+    LIMIT 5
+""" % d3f)
+list(nodes)
+        </py-repl>
+        <div id="replOutput"></div>
+    </div>
+
+    <div class="tab-pane p-4 fade" id="tab50" role="tabpanel" aria-labelledby="tab50-tab">
+        <h4>Intro</h4>
+        <p>This tool shows how to use the D3FEND ontology to support the design and review of IT architectures.
+
+        <ul>
+        <li>The first step is to represent your components and their relationships in a mermaid graph.
+        <li>You can classify your components using font-awesome icons (see the <a href="https://fontawesome.com/icons?d=gallery">gallery</a>). For example the <code>fa:fa-envelope</code> icon is used to reference is an email.
+
+        <pre>Client -->|fa:fa-envelope| MTA</pre>
+
+        The application is capable to label major sofware applications (e.g. nginx, postfix, ...) and to map them to the corresponding D3FEND classes (e.g. <code>d3f:MailTransferAgent</code>).
+
+        You can also use the <code>fab:fa-react</code> icon to indicate that a component is a WebUI.
+
+        <li>Once you have created your mermaid graph, you can click on the D3FEND tab to see the corresponding D3FEND graph. The D3FEND graph is represented as a turtle file. You can copy and paste it in your favorite RDF editor (e.g. <a href="https://www.w3.org/RDF/Validator/">W3C RDF validator</a>).
+
+        <li>The "Summary" tabs shows a table with the main entities of the D3FEND graph and the attacks associated with the specific DigitalArtifacts. The table contains hyperlinks to the corresponding D3FEND classes and ATT&CK techniques.
+        </p>
+
+        <p><h4>Font-awesome reference</h4>
+        <ul>
+        <li>fa:fa-server - d3f:Server
+        <li>fa:fa-desktop - d3f:WebServerApplication
+        <li>fa:fa-envelope - d3f:Email
+        <li>fa:fa-user-secret - d3f:UserAccount
+        <li>fa:fa-globe - d3f:InternetNetworkTraffic
+        <li>fab:fa-react, fab:fa-angular, fab:fa-vuejs - d3f:WebServerApplication, d3f:GraphicalUserInterface
+        <li>fa:fa-folder - d3f:FileSystem
+        <li>fab:fa-docker - d3f:ContainerProcess
+        </ul>
+
+
+        </p>
+
+    </div>
+    <div class="tab-pane p-4 fade" id="tab100" role="tabpanel" aria-labelledby="tab100-tab">
+        <h4>Open Source</h4>
+        <p>This tool is Open Source, contributions are welcome.
+        <ul>
+        <li>Source code: <a href="https://github.com/par-tec/neo4j-semantic-docker" target="_blank" rel="noopener noreferrer">github.com/par-tec/neo4j-semantic-docker</a>
+        </p>
+        </ul>
+    </div>
+    <div class="tab-pane p-4 fade" id="tab-d3fend" role="tabpanel" aria-labelledby="tab-d3fend-tab">
+      <p>D3FEND Summary with artifacts and defeses.</p>
+      <p><button class="fas fa-copy float-end" id="d3fend-summary-copy"></button> </p>
+      <div id="d3fend-summary">d3f summary placeholder </div>
     </div>
 
   </div><!-- tab-content -->
@@ -270,7 +332,7 @@ spec:
 </div><!-- row -->
 <py-script>
 import logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 # Pyodide imports
@@ -280,49 +342,121 @@ log.info(f"{pyodide_js.version= }")
 import js
 
 from time import time
+import re
 import html
 import rdflib
-import pandas as pd
 
 # Import local application.
 import app
 
 # Import library via js-proxy, requires pyodide>0.21
-from js import mermaid
+from js import mermaid, d3
 log.info(f"mermaid: {dir(mermaid)}")
 mermaidAPI = mermaid.default.mermaidAPI
-
+mermaidAPI.initialize(**{
+  "maxTextSize": 100_000,
+  "flowchart": {
+    "useMaxWidth": False,
+  }
+})
+CONFIG = {
+  "strip_prefix": True,  # "urn:k8s:"
+}
 
 g = app.initialize_graph(["ontology.ttl","d3fend-short.ttl"])
 g1 = None
-text0 = None
+last_update = time()
 # Publish information in the global namespace
 #   to be accessible from the console.
-g_kube = None
 text_mmd = ""
 
+status = {
+  "mermaid": {
+    "last-rendered-unfilter-text": None,
+    "diagram-text": None
+  }
+}
 
-def on_apply(event):
-  """Create the RDF graph from mermaid text,
-    update the turtle representation
-    and the summary table.
+def mmd_to_graph(event):
+  """Generate a d3f graph from mermaid text.
+    This only works in "mermaid" mode.
   """
-  global g, g1, text0
-  if text0 == Element("mermaid").value:
-    log.warning("No change in mermaid text.")
+  global g1, status
+  log.warning("mmd_to_graph: %s" % (event,))
+  if time() - last_update < 1:
+    log.warning("Skipping update, too fast.")
     return
-  text0 = Element("mermaid").value
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if kube_view:
+    log.warning("In kube view, skipping..")
+    return
+
+  if g1 and (status["mermaid"]["last-rendered-unfilter-text"] == Element("mermaid").value):
+    log.warning(f"No change in mermaid text.")
+    return
+  status["mermaid"]["last-rendered-unfilter-text"] = Element("mermaid").value
 
   log.warning("Creating RDF graph..")
   t0 = time()
+  log.warning("Load graph from mermaid.")
   graph_ttl = app.content_to_rdf(Element("mermaid").value)
   Element("turtle-graph").write(graph_ttl)
   log.warning("Created RDF graph in %d.." % (time()-t0,))
-
-  log.warning("Creating summary..")
-  t0 = time()
   g1 = rdflib.Graph()
   g1.parse(data=graph_ttl, format="turtle")
+
+def kube_to_graph(event):
+  """Generate a d3f graph from kubernetes text.
+    This only works in "kubernetes" mode.
+  """
+  global g1
+  log.warning(f"event {event}")
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if not kube_view:
+    log.warning("Not in kube view, skipping..")
+    return
+
+  text = Element("kubernetes").value
+  # Always re-create the RDF graph.
+  log.warning("No RDF graph, creating one..")
+  t0 = time()
+  graph_ttl = app.content_to_rdf(text)
+  Element("turtle-graph").write(graph_ttl)
+  log.warning("Created RDF graph in %d.." % (time()-t0,))
+  g1 = rdflib.Graph()
+  g1.parse(data=graph_ttl, format="turtle")
+
+def update_graph_and_render_mermaid(event):
+  global g, g1, status
+  log.warning("update_graph_and_render_mermaid: %s" % (event,))
+
+  if hasattr(event, "inputType") and len(Element("mermaid").value) > 1000:
+    log.warning("Skipping update, too big.")
+    return
+  # If toggle-kube-view is checked, don't update the graph.
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if kube_view:
+    log.warning("In kube view, skipping..")
+    return
+
+  # Populate g1 from the mermaid text.
+  mmd_to_graph(event)
+  render_mmd(event)
+
+def create_report(event):
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if kube_view:
+    # Graph is already loaded.
+    if not g1:
+      log.error("Graph is not loaded.")
+      return
+    log.warning("Graph is already loaded.")
+  else:
+    # Reload g1 from the mermaid text.
+    mmd_to_graph(event)
+
+  # Generate the d3fend tables.
+  t0 = time()
   for (id_, f) in [("attack", app.attack_summary_html), ("d3fend", app.d3fend_summary_html)]:
     try:
       html = f(g + g1, aggregate=True)
@@ -332,12 +466,12 @@ def on_apply(event):
      log.error(f"Error in {id_} summary: {e}")
   log.warning("Created summary in %d.." % (time()-t0,))
 
-
 def render_mmd(event):
   """Render the `mermaid-graph` with `mermaid`.text"""
-  global text_mmd, g, g1
-  log.warning(f"event {event}")
+  global text_mmd, g, g1, status
+  log.warning(f"render_mmd: event {event}")
   text = Element("mermaid").value
+  flip = Element("mermaid-chk-flip").element.checked
   try:
     content_type = app.guess_content(text)
     if content_type == "markdown":
@@ -349,37 +483,72 @@ def render_mmd(event):
     else:
       log.warning("Unknown content.")
       text_mmd = text
-    log.warning(f"mermaid text: {text_mmd}")
     text_mmd = app.render_unicode_emojis(text_mmd)
-    mmd = mermaidAPI.render('buz', text_mmd)
+    #
+    # Filter text_mmd matching mermaid_filter or subgraph
+    #
+    mermaid_filter = Element("mermaid-filter").value
+    re_filter =re.compile(f"{mermaid_filter}|^\s+(subgraph|end|graph)")
+    if mermaid_filter:
+      log.warning(f"Filtering mermaid text with {mermaid_filter}")
+      text_mmd = app.filter_mermaid(text_mmd, mermaid_filter)
+      status["mermaid"]["diagram-text"] = text_mmd
+
+    # Flip the graph switching TD with LR
+    log.warning(f"Flip: {flip}")
+    if flip:
+      if "graph TD" in text_mmd:
+        text_mmd = text_mmd.replace("graph TD", "graph LR")
+        text_mmd = re.sub(r"subgraph\s+(.*?)\n", r"subgraph \1\ndirection TD\n\n", text_mmd)
+      else:
+        text_mmd = text_mmd.replace("graph LR", "graph TD")
+        text_mmd = re.sub(r"subgraph\s+(.*?)\n", r"subgraph \1\ndirection LR\n\n", text_mmd)
+
+    log.warning(f"mermaid text: {text_mmd[:100]}")
+    mmd = mermaidAPI.render('mermaid-diagram-svg', text_mmd)
     js.document.getElementById("mermaid-graph").innerHTML = mmd
+
+    # Enable zooming via d3 library.
+    svgs = js.d3.selectAll("svg")
+    for svg in svgs:
+      js.mermaid_enable_zoom(svg)
+
+
   except Exception as e:
     log.exception(f"Error in mermaid: {e}")
+
 
 def resolve_unicode():
   text_mmd = text_mmd.replace("u:u-gear", "\N{GEAR}")
   raise NotImplementedError
 
 def kube_to_mmd(event):
-  global g_kube
-  log.warning(f"event {event}")
-  text = Element("kubernetes").value
-  content_type = app.guess_content(text)
-  if content_type != "kubernetes":
-    log.warning("Not a Kubernetes Manifest File.")
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if not kube_view:
+    log.warning("Not in kube view, skipping..")
     return
-  # Always re-create the RDF graph.
-  log.warning("No RDF graph, creating one..")
-  t0 = time()
-  graph_ttl = app.content_to_rdf(text)
-  Element("turtle-graph").write(graph_ttl)
-  log.warning("Created RDF graph in %d.." % (time()-t0,))
-  g_kube = rdflib.Graph()
-  g_kube.parse(data=graph_ttl, format="turtle")
-  text_mmd = app.rdf_to_mermaid(g_kube)
 
+  kube_to_graph(event)
+  graph_to_mmd(event)
+
+def graph_to_mmd(event):
+  global g1, CONFIG, status
+  kube_view = js.document.querySelector("#toggle-kube-view").checked
+  if not kube_view:
+    log.warning("Not in kube view, skipping..")
+    return
+
+  if not g1:
+    log.error("No RDF graph..")
+    return
+
+  text_mmd = app.rdf_to_mermaid(g1)
+
+  if CONFIG["strip_prefix"]:
+    text_mmd = text_mmd.replace("urn:k8s:", "")
   # Update the mermaid textarea
-  Element("mermaid").element.innerHTML = text_mmd.replace("urn:k8s:", "")
+  Element("mermaid").element.innerHTML = text_mmd
+  status["mermaid"]["last-rendered-unfilter-text"] = str(time())
   render_mmd(None)
 
 
@@ -397,24 +566,60 @@ def _copy_to_clipboard_with_js(id_):
   ci = js.ClipboardItem.new(**{"text/html": blob})
   js.navigator.clipboard.write([ci])
 
+def refresh_mermaid_on_input(event):
+  log.warning(dir(event))
 
 initialized = False
 if not initialized:
   render_mmd(None)
 
   # Register events.
-  tabs = js.document.querySelectorAll("li.nav-item")
-  log.info("Found elements %r" % tabs)
-  for tab in tabs:
-    log.info(f"Found element {tab}")
-    if not tab:
-      continue
-    tab.addEventListener("click", create_proxy(on_apply))
   js.document.getElementById("mermaid").addEventListener(
-    "input", create_proxy(render_mmd)
+    "input", create_proxy(update_graph_and_render_mermaid)
   )
+
+  # when pressing enter on mermaid-filter, run update_graph_and_render_mermaid
+  js.document.getElementById("mermaid-filter").addEventListener(
+    "input", create_proxy(refresh_mermaid_on_input)
+  )
+  # when pressing mermaid-btn-fullscreen set the mermaid-graph class to full
+  def _toggle_fullscreen(event):
+    global CONFIG
+    log.warning("Toggle fullscreen")
+    mermaid_graph = Element("mermaid-graph")
+    inputCol = Element("inputCol")
+    header = Element("header")
+    if "diagram-normal" in mermaid_graph.element.classList:
+      mermaid_graph.remove_class("diagram-normal")
+      mermaid_graph.add_class("diagram-full")
+      inputCol.add_class("visually-hidden")
+      header.add_class("visually-hidden")
+    else:
+      mermaid_graph.add_class("diagram-normal")
+      mermaid_graph.remove_class("diagram-full")
+      inputCol.remove_class("visually-hidden")
+      header.remove_class("visually-hidden")
+
+
+  js.document.getElementById("mermaid-btn-fullscreen").addEventListener(
+    "click", create_proxy(_toggle_fullscreen)
+  )
+  js.document.getElementById("mermaid-chk-flip").addEventListener(
+    "click", create_proxy(render_mmd)
+  )
+
+  for element_id in ("mermaid-btn-redraw", "tab1-tab"):
+    js.document.getElementById(element_id).addEventListener(
+      "click", create_proxy(render_mmd)
+    )
   js.document.getElementById("kubernetes-reload").addEventListener(
     "click", create_proxy(kube_to_mmd)
+  )
+  js.document.getElementById("tab-attack-tab").addEventListener(
+    "click", create_proxy(create_report)
+  )
+  js.document.getElementById("tab-d3fend-tab").addEventListener(
+    "click", create_proxy(create_report)
   )
   # Copy to clipboard.
   js.document.getElementById("attack-summary-copy").addEventListener(

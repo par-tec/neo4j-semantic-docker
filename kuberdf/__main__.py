@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import click
@@ -7,6 +8,8 @@ from mermaidrdf import MermaidRDF
 
 from . import parse_manifests
 from .neo4j import run_queries
+
+log = logging.getLogger(__name__)
 
 
 @click.command()
@@ -33,18 +36,40 @@ from .neo4j import run_queries
     is_flag=True,
     help="Convert from RDF to Mermaid",
 )
-def main(basepath, destfile, neo4j, ns_from_file, mermaid):
-    parse_manifests(
-        Path(basepath).glob("**/*.y*ml"), outfile=destfile, ns_from_file=True
-    )
+@click.option(
+    "--ignore",
+    default=None,
+    help="Ignore files matching this pattern",
+)
+@click.option(
+    "--match",
+    default=None,
+    help="Select files matching this pattern",
+)
+def main(basepath, destfile, neo4j, ns_from_file, mermaid, ignore, match):
+    basepath = Path(basepath)
+    if basepath.is_dir():
+        files = Path(basepath).glob("**/*.y*ml")
+    elif basepath.is_file():
+        files = (basepath,)
+    else:
+        raise ValueError("basepath must be a file or directory")
+    if ignore:
+        files = (f for f in files if not f.match(ignore))
+    if match:
+        files = (f for f in files if f.match(match))
+    files = list(files)
+    log.info("Parsing files: %s", files)
+    parse_manifests(files, outfile=destfile, ns_from_file=True)
 
     if mermaid:
+        log.info("Converting to Mermaid")
         g = Graph()
         g.parse(Path(destfile).with_suffix(".ttl"), format="turtle")
         mermaid = MermaidRDF(g)
         mermaid_text = mermaid.render()
         Path(destfile).with_suffix(".md").write_text(
-            f"""# Sample
+            f"""# Sample {destfile}
 
 ```mermaid
 {mermaid_text}

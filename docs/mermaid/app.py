@@ -3,15 +3,87 @@ import re
 import unicodedata
 from time import time
 
-import pandas as pd
 import yaml
 from rdflib import Graph
+from rdflib.namespace import RDF
 
 import kuberdf
 import mermaidrdf
 
 log = logging.getLogger(__name__)
 HEADERS = ["node", "relation", "artifact", "technique"]
+
+
+def filter_mermaid(text, mermaid_filter, skip_filter=None):
+    # Assumes that subgraphs are not nested
+    # and that they are at the end of the text.
+    log.warning(f"Filtering mermaid text with {mermaid_filter}")
+    re_mermaid_filter = re.compile(f"""^.*({mermaid_filter}).*""", re.I)
+    ret = []
+    subgraphs = re.findall(r"(\nsubgraph.*?\nend)", text, re.DOTALL)
+    matching_subgraphs = []
+    for subgraph in subgraphs:
+        if re.match(".*" + mermaid_filter + ".*", subgraph, re.DOTALL):
+            subgraph_name = re.search(r"subgraph\s+([^[]+)\s*", subgraph).group(1)
+            matching_subgraphs.append(subgraph_name)
+    nodes = set()
+    for line in text.splitlines():
+        if skip_filter and re.match(".*" + skip_filter + ".*", line):
+            log.debug("Skipping line: " + line)
+            continue
+
+        s_p_o = mermaidrdf.RE_LINE.match(line)
+        s_p_o = s_p_o.groups() if s_p_o else [None] * 9
+        s, o = s_p_o[0], s_p_o[8]
+        items = {s, o}
+        log.debug(f"Extracting resources from line: (s={s}, o={o}")
+
+        if s in ("subgraph", "graph", "classDef", "class", "click"):
+            ret.append(line)
+            continue
+
+        # Don't render empty subgraphs.
+        if s == "end":
+            if ret[-1].startswith("subgraph "):
+                ret.pop()
+            else:
+                ret.append(line)
+            continue
+
+        is_required = re_mermaid_filter.match(line)
+        is_inferred = items & nodes
+        if is_required or is_inferred:
+            log.debug(
+                f"Found matching line: {line} (is_required={is_required}, is_inferred={is_inferred})"
+            )
+            ret.append(line)
+            if s:
+                nodes.add(s)
+            if o:
+                nodes.add(o)
+            continue
+        # If a subgraph contains the filter, include any line that contains the subgraph name.
+        if any((x for x in matching_subgraphs if "_" in x and x in line)):
+            log.debug("Found matching subgraph: " + line)
+            ret.append(line)
+            continue
+
+        log.debug(f"Filtering out {line}")
+
+    text_mmd = "\n".join(ret)
+    log.info(f"Filtered mermaid text:\n{text_mmd}")
+    return text_mmd
+
+
+def rdf_to_mermaid_filtered(g, match=""):
+    x = Graph()
+    # Add all g triples to x
+    for s, p, o in g:
+        if (p, o) == (RDF.type, kuberdf.NS_K8S.Namespace):
+            x.add((s, p, o))
+        if match in f"{s}{o}":
+            x.add((s, p, o))
+    return rdf_to_mermaid(x)
 
 
 def initialize_graph(ontologies):
@@ -27,7 +99,7 @@ def initialize_graph(ontologies):
 
 def markdown_to_mermaid(text):
     mermaid_graphs = mermaidrdf.extract_mermaid(text)
-    mermaid = "graph\n" + "\n".join(
+    mermaid = "graph LR\n" + "\n".join(
         re.sub(r"^graph.*\n", "", graph) for graph in mermaid_graphs
     )
     return mermaid
@@ -129,14 +201,22 @@ def attack_summary_html(g: Graph, aggregate=False):
 
 
 def f_summary_html(g: Graph, aggregate=False, summary_function=d3fend_summary):
-    rows = summary_function(g)
-    df = pd.DataFrame(data=rows[1:], columns=rows[0])
-    if aggregate:
-        df = df.groupby(["node", "artifact", "technique"], as_index=False).agg(",".join)
-    df = df[HEADERS]
-    html = df.to_html(
-        formatters=[markdown_link_to_html_link] * len(HEADERS), escape=False
-    )
+    try:
+        import pandas as pd
+
+        rows = summary_function(g)
+        df = pd.DataFrame(data=rows[1:], columns=rows[0])
+        if aggregate:
+            df = df.groupby(["node", "artifact", "technique"], as_index=False).agg(
+                ",".join
+            )
+        df = df[HEADERS]
+        html = df.to_html(
+            formatters=[markdown_link_to_html_link] * len(HEADERS), escape=False
+        )
+    except Exception as e:
+        log.exception(e)
+        html = "<pre>" + str(e) + "</pre>"
     return html
 
 

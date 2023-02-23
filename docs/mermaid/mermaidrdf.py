@@ -21,7 +21,10 @@ MERMAID_KEYWORDS = (
 PAT_LABEL = r"(.*?)"
 PAT_OPEN = r"|".join((r"\[\[", r"\[\(", r"\(\(", r"\{\{", r"\[\/"))
 PAT_CLOSE = r"|".join((r"\]\]", r"\)\]", r"\)\)", r"\}\}", r"\/\]"))
-PAT_NODE = r"(\w+)" r"(([\(\[\{\/]{1,2})" + PAT_LABEL + r"([\)\]\}\/]{1,2}))?"
+PAT_NODE = (
+    r"([a-zA-Z0-9_:/.]+(?:[-=][a-zA-Z0-9_:/.]+)*)"
+    r"(([\(\[\{\/]{1,2})" + PAT_LABEL + r"([\)\]\}\/]{1,2}))?"
+)
 PAT_ARROW = r"\s*(-->|--o|-[.-]+-[>ox]?)" + r"\s*" + r"(?:\|(.*)?\|)?\s*"
 PAT_LINE = rf"{PAT_NODE}({PAT_ARROW}{PAT_NODE})*"
 RE_ARROW = re.compile(PAT_ARROW)
@@ -199,21 +202,30 @@ class MermaidRDF:
     """Convert an RDF graph to a mermaid graph."""
 
     ICON_MAP = {
-        "urn:k8s:Service": "fa:fa-network-wired",
-        "urn:k8s:Port": "fa:fa-ethernet",
-        "urn:k8s:Deployment": "⟳",
-        "urn:k8s:DeploymentConfig": "⟳",
-        "urn:k8s:Pod": "fa:fa-cube",
-        "urn:k8s:Container": "fa:fa-cube",
-        "urn:k8s:Namespace": "⬚",
-        "urn:k8s:Image": "fa:fa-docker",
         "urn:k8s:Application": "fa:fa-cubes",
+        "urn:k8s:Container": "fa:fa-cube",
+        "urn:k8s:Deployment": "\N{CLOCKWISE GAPPED CIRCLE ARROW}",
+        "urn:k8s:DeploymentConfig": "\N{CLOCKWISE GAPPED CIRCLE ARROW}",
+        "urn:k8s:Image": "fa:fa-docker",
+        "urn:k8s:Namespace": "\N{DOTTED SQUARE}",
         "urn:k8s:PersistentVolumeClaim": "fa:fa-database",
+        "urn:k8s:Pod": "fa:fa-cube",
+        "urn:k8s:Port": "fa:fa-ethernet",
+        "urn:k8s:Secret": "fa:fa-key",
+        "urn:k8s:Service": "fa:fa-network-wired",
+        "urn:k8s:Registry": "fa:fa-docker fa:fa-database",
+        "urn:k8s:Route": "fa:fa-route",
+        "urn:k8s:Host": "fa:fa-globe",
     }
-    UNSUPPORTED_TYPES = (
+    DONT_RENDER_AS_NODES = (
         NS_K8S.Application,
-        NS_K8S.Image,
+        #        NS_K8S.Image,
         NS_K8S.Host,
+        NS_K8S.Namespace,
+        NS_K8S.Pod,
+        NS_K8S.Job,
+        NS_K8S.BuildConfig,
+        NS_K8S.Registry,
     )
 
     def __init__(self, g: Graph):
@@ -224,7 +236,14 @@ class MermaidRDF:
     @staticmethod
     def sanitize_uri(s):
         """Sanitize a URI to be used as a node name in mermaid."""
-        return s.split("@", 1)[0].replace("/", "_").replace("@", "_")[:64]
+        ret = s.split("@", 1)[0].replace("/", "_").replace("@", "_")
+        return ret
+        if len(ret) < 64:
+            return ret
+        prefix, suffix = ret[:64], ret[64:]
+        import zlib
+
+        return f"{zlib.crc32(prefix.encode())}_{suffix}"
 
     @staticmethod
     def sanitize_label(label):
@@ -239,11 +258,16 @@ class MermaidRDF:
             if len(ret) - offset > 20:
                 ret += r"\n"
                 offset += 20
-        return ret
+        return ret.strip(r"\n").strip()
 
-    def parse(self):
+    def parse(self, match: str = ""):
+        if self.lines:
+            log.info(f"Already parsed {len(self.lines)} lines.")
+            return
         for s, p, o in self.g:
             if p != RDF.type:
+                continue
+            if match not in str(s) and match not in str(o):
                 continue
             type_ = o
             # Skip non-k8s resources.
@@ -273,7 +297,9 @@ class MermaidRDF:
 
             # Some resources should not be rendered as nodes
             # Instead they are rendered as subgraphs.
-            if type_ not in MermaidRDF.UNSUPPORTED_TYPES:
+            if type_ in MermaidRDF.DONT_RENDER_AS_NODES:
+                log.warning("Skipping %s", s)
+            else:
                 if type_ == NS_K8S.Container:
                     left_p, right_p = "[[", "]]"
                 elif type_ == NS_K8S.Service:
@@ -285,8 +311,7 @@ class MermaidRDF:
                 self.lines.append(
                     f"""{src}{left_p}{label_l}{right_p}""".replace("\n", "")
                 )
-            else:
-                log.warning("Skipping %s", s)
+
             for link in (
                 NS_K8S.executes,
                 NS_K8S.exposes,
@@ -295,12 +320,14 @@ class MermaidRDF:
                 for dst in self.g.objects(s, link) or []:
                     dst = MermaidRDF.sanitize_uri(dst)
                     self.lines.append(f"""{src} --> |{str(link)[8:]}| {dst}""")
+        log.info("Parsed %s lines.", len(self.lines))
 
     def render(self):
         self.parse()
         ret = "graph\n"
         ret += "\n".join(self.lines)
         ret += "\n"
+        ret += "%%\n%% Subgraphs\n%%\n"
         ret += "\n".join(MermaidRDF.create_tree(self.subgraphs))
         return ret
 
@@ -308,13 +335,14 @@ class MermaidRDF:
     def create_tree(tree):
         """Create a tree of subgraphs according to mermaid syntax."""
         rendered = set()
-        for parent, data in tree.items():
-            children = data.get("children", [])
+
+        def _render_tree(parent, data):
             label = data.get("label") or ""
             parent_type = data.get("type")
+            children = data.get("children") or []
             children = set(children)
             if not children:
-                continue
+                return
             log.warning("Rendering %s", parent)
             children_to_render = set()
             for child in children:
@@ -323,6 +351,7 @@ class MermaidRDF:
                 if child == parent:
                     continue
                 if parent_type == NS_K8S.Namespace:
+                    # Namespace should be processed last.
                     if "_Deployment_" in child:
                         continue
                     if "_DeploymentConfig_" in child:
@@ -335,7 +364,17 @@ class MermaidRDF:
                 children_to_render.add(f"  {child}")
                 rendered.add(child)
             if not children_to_render:
-                continue
+                return
             yield f"subgraph {parent}{label}"
             yield from children_to_render
             yield "end"
+
+        tree_namespace = []
+        for parent, data in tree.items():
+            parent_type = data.get("type")
+            if parent_type == NS_K8S.Namespace:
+                tree_namespace.append((parent, data))
+                continue
+            yield from _render_tree(parent, data)
+        for parent, data in tree_namespace:
+            yield from _render_tree(parent, data)

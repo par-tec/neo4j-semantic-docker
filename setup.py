@@ -28,6 +28,7 @@ setuptools.setup(
             "mermaidrdf/*.yaml",
             "oasrdf/*.yaml",
             "kuberdf/*.yaml",
+            "kuberdf/*.ttl",
         ]
     },
 )
