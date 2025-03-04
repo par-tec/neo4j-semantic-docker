@@ -15,8 +15,8 @@ CALL n10s.nsprefixes.addFromText(txt) yield prefix, namespace
 RETURN prefix, namespace;
 
 // Ensure resources are unique.
-CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
-ASSERT r.uri IS UNIQUE;
+CREATE CONSTRAINT n10s_unique_uri FOR (r:Resource)
+REQUIRE r.uri IS UNIQUE;
 
 // Import d3fend.
 // CALL n10s.rdf.import.fetch("https://next.d3fend.mitre.org/ontologies/d3fend.ttl","Turtle");
