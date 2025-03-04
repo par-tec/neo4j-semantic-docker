@@ -26,7 +26,10 @@ ASSERT r.uri IS UNIQUE;
 CALL n10s.rdf.import.fetch("file:///code/d3fend.ttl", "Turtle");
 CALL n10s.rdf.import.fetch("file:///code/deleteme.ttl", "Turtle");
 
-// Add  labels
+// Add labels on interesting classes. Since neo4j semantic does not
+//  convert all subClassOf in labels, it should be done manually.
+//  And it is cheaper to do checking for specific property keys than
+//  inferring it from subclasses.
 match (n)
 where
 n.`d3f__attack-id` is not null
@@ -36,6 +39,11 @@ match (n)
 where
 n.`d3f__d3fend-id` is not null
 set n:d3f__DefensiveTechnique ;
+
+match (n)
+where
+n.`d3f__cwe-id` is not null
+set n:d3f__Weakness ;
 
 // Add K8S labels
 
