@@ -28,7 +28,7 @@ def test_file():
     g = parse_manifest_as_graph(
         manifest_text=kube_yaml.read_text(), manifest_format=kube_yaml.suffix[1:]
     )
-    log.info(f"Loaded {kube_yaml} in {time()-t0}s")
+    log.info(f"Loaded {kube_yaml} in {time() - t0}s")
     assert len(g) > 1000
 
     x = Graph()

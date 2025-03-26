@@ -10,6 +10,8 @@ call n10s.graphconfig.set( { keepLangTag: true, handleRDFTypes: "LABELS_AND_NODE
 WITH '
 @prefix d3f:  <http://d3fend.mitre.org/ontologies/d3fend.owl#> .
 @prefix k8s: <urn:k8s:> .
+@prefix CPV: <https://w3id.org/italia/onto/CPV/> .
+@prefix CLV: <https://w3id.org/italia/onto/CLV/> .
 ' AS txt
 CALL n10s.nsprefixes.addFromText(txt) yield prefix, namespace
 RETURN prefix, namespace;
